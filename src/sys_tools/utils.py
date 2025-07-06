@@ -14,7 +14,7 @@ def format_file_size(size_bytes: int) -> str:
     Returns:
         Human-readable size string
     """
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size_bytes < 1024.0:
             return f"{size_bytes:.2f} {unit}"
         size_bytes /= 1024.0
@@ -32,7 +32,7 @@ def format_timestamp(timestamp: float) -> str:
         Formatted datetime string
     """
     dt = datetime.fromtimestamp(timestamp)
-    return dt.strftime('%Y-%m-%d %H:%M:%S')
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_file_type(path: Path) -> str:
@@ -57,7 +57,7 @@ def get_file_type(path: Path) -> str:
 
         # Check for common text files without extensions
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 f.read(512)  # Try reading first 512 bytes
             return "text/plain"
         except (UnicodeDecodeError, IOError):
@@ -66,7 +66,9 @@ def get_file_type(path: Path) -> str:
         return "unknown"
 
 
-def safe_read_text(path: Path, encoding: str = 'utf-8', max_size: int | None = None) -> str:
+def safe_read_text(
+    path: Path, encoding: str = "utf-8", max_size: int | None = None
+) -> str:
     """
     Safely read text from a file.
 
@@ -87,16 +89,20 @@ def safe_read_text(path: Path, encoding: str = 'utf-8', max_size: int | None = N
         size = path.stat().st_size
         if size > max_size:
             # Read only up to max_size
-            with open(path, 'r', encoding=encoding) as f:
+            with open(path, "r", encoding=encoding) as f:
                 content = f.read(max_size)
-                return content + f"\n\n[Truncated - file size {format_file_size(size)} exceeds limit]"
+                return (
+                    content
+                    + f"\n\n[Truncated - file size {format_file_size(size)} exceeds limit]"
+                )
 
-    with open(path, 'r', encoding=encoding) as f:
+    with open(path, "r", encoding=encoding) as f:
         return f.read()
 
 
-def safe_write_text(path: Path, content: str, encoding: str = 'utf-8',
-                   create_parents: bool = True) -> None:
+def safe_write_text(
+    path: Path, content: str, encoding: str = "utf-8", create_parents: bool = True
+) -> None:
     """
     Safely write text to a file.
 
@@ -113,9 +119,9 @@ def safe_write_text(path: Path, content: str, encoding: str = 'utf-8',
         path.parent.mkdir(parents=True, exist_ok=True)
 
     # Write to temporary file first, then move (atomic write)
-    temp_path = path.with_suffix(path.suffix + '.tmp')
+    temp_path = path.with_suffix(path.suffix + ".tmp")
     try:
-        with open(temp_path, 'w', encoding=encoding) as f:
+        with open(temp_path, "w", encoding=encoding) as f:
             f.write(content)
         temp_path.replace(path)
     except Exception:
@@ -139,24 +145,24 @@ def get_file_permissions(path: Path) -> str:
     perms = []
 
     # Owner permissions
-    perms.append('r' if mode & 0o400 else '-')
-    perms.append('w' if mode & 0o200 else '-')
-    perms.append('x' if mode & 0o100 else '-')
+    perms.append("r" if mode & 0o400 else "-")
+    perms.append("w" if mode & 0o200 else "-")
+    perms.append("x" if mode & 0o100 else "-")
 
     # Group permissions
-    perms.append('r' if mode & 0o040 else '-')
-    perms.append('w' if mode & 0o020 else '-')
-    perms.append('x' if mode & 0o010 else '-')
+    perms.append("r" if mode & 0o040 else "-")
+    perms.append("w" if mode & 0o020 else "-")
+    perms.append("x" if mode & 0o010 else "-")
 
     # Other permissions
-    perms.append('r' if mode & 0o004 else '-')
-    perms.append('w' if mode & 0o002 else '-')
-    perms.append('x' if mode & 0o001 else '-')
+    perms.append("r" if mode & 0o004 else "-")
+    perms.append("w" if mode & 0o002 else "-")
+    perms.append("x" if mode & 0o001 else "-")
 
-    return ''.join(perms)
+    return "".join(perms)
 
 
-def normalize_line_endings(content: str, style: str = 'unix') -> str:
+def normalize_line_endings(content: str, style: str = "unix") -> str:
     """
     Normalize line endings in text content.
 
@@ -168,13 +174,13 @@ def normalize_line_endings(content: str, style: str = 'unix') -> str:
         Content with normalized line endings
     """
     # First normalize to \n
-    content = content.replace('\r\n', '\n').replace('\r', '\n')
+    content = content.replace("\r\n", "\n").replace("\r", "\n")
 
     # Then convert to requested style
-    if style == 'windows':
-        content = content.replace('\n', '\r\n')
-    elif style == 'mac':
-        content = content.replace('\n', '\r')
+    if style == "windows":
+        content = content.replace("\n", "\r\n")
+    elif style == "mac":
+        content = content.replace("\n", "\r")
 
     return content
 
@@ -192,15 +198,17 @@ def create_error_response(error: Exception, operation: str) -> dict[str, Any]:
     """
     error_type = type(error).__name__
     return {
-        'success': False,
-        'error': str(error),
-        'error_type': error_type,
-        'operation': operation,
-        'message': f"{operation} failed: {error}"
+        "success": False,
+        "error": str(error),
+        "error_type": error_type,
+        "operation": operation,
+        "message": f"{operation} failed: {error}",
     }
 
 
-def create_success_response(data: Any, operation: str, message: str | None = None) -> dict[str, Any]:
+def create_success_response(
+    data: Any, operation: str, message: str | None = None
+) -> dict[str, Any]:
     """
     Create a standardized success response.
 
@@ -212,13 +220,9 @@ def create_success_response(data: Any, operation: str, message: str | None = Non
     Returns:
         Success response dictionary
     """
-    response = {
-        'success': True,
-        'data': data,
-        'operation': operation
-    }
+    response = {"success": True, "data": data, "operation": operation}
 
     if message:
-        response['message'] = message
+        response["message"] = message
 
     return response

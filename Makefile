@@ -3,11 +3,11 @@
 
 # Environment setup
 install: ## Install dependencies with uv
-	uv sync --all-extras
+	uv sync
 	@echo "Dependencies installed"
 
 install-dev: ## Install development dependencies
-	uv sync --all-extras --dev
+	uv sync --extra dev
 	uv pip install -e .
 	@echo "Development environment ready"
 

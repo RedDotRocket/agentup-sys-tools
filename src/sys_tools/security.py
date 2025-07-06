@@ -5,13 +5,16 @@ from pathlib import Path
 
 class SecurityError(Exception):
     """Raised when a security check fails."""
+
     pass
 
 
 class SecurityManager:
     """Manages security policies and validations."""
 
-    def __init__(self, workspace_dir: str | None = None, max_file_size: int = 10 * 1024 * 1024):
+    def __init__(
+        self, workspace_dir: str | None = None, max_file_size: int = 10 * 1024 * 1024
+    ):
         """
         Initialize security manager.
 
@@ -24,18 +27,37 @@ class SecurityManager:
 
         # Command whitelist for safe execution
         self.allowed_commands = {
-            'ls', 'pwd', 'whoami', 'date', 'echo', 'cat', 'head', 'tail',
-            'wc', 'grep', 'find', 'which', 'env', 'printenv', 'uname',
-            'hostname', 'id', 'groups', 'df', 'du', 'free', 'uptime'
+            "ls",
+            "pwd",
+            "whoami",
+            "date",
+            "echo",
+            "cat",
+            "head",
+            "tail",
+            "wc",
+            "grep",
+            "find",
+            "which",
+            "env",
+            "printenv",
+            "uname",
+            "hostname",
+            "id",
+            "groups",
+            "df",
+            "du",
+            "free",
+            "uptime",
         }
 
         # Dangerous path patterns
         self.dangerous_patterns = [
-            r'\.\./',  # Directory traversal
-            r'^\/',    # Absolute paths (when not allowed)
-            r'~/',     # Home directory expansion
-            r'\$\{',   # Variable expansion
-            r'\$\(',   # Command substitution
+            r"\.\./",  # Directory traversal
+            r"^\/",  # Absolute paths (when not allowed)
+            r"~/",  # Home directory expansion
+            r"\$\{",  # Variable expansion
+            r"\$\(",  # Command substitution
         ]
 
     def validate_path(self, path: str | Path, allow_absolute: bool = False) -> Path:
@@ -115,6 +137,7 @@ class SecurityManager:
         """
         # Basic command parsing (splits on spaces, respects quotes)
         import shlex
+
         try:
             args = shlex.split(command)
         except ValueError as e:
@@ -132,10 +155,10 @@ class SecurityManager:
             )
 
         # Additional validation for specific commands
-        if base_command in ['cat', 'head', 'tail']:
+        if base_command in ["cat", "head", "tail"]:
             # Ensure they're only reading files within workspace
             for arg in args[1:]:
-                if not arg.startswith('-'):  # Skip flags
+                if not arg.startswith("-"):  # Skip flags
                     try:
                         self.validate_path(arg)
                     except SecurityError:
@@ -166,6 +189,6 @@ class SecurityManager:
             )
 
         # Remove null bytes
-        content = content.replace('\0', '')
+        content = content.replace("\0", "")
 
         return content
