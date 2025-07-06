@@ -1,18 +1,31 @@
 [project]
-name = "system-tools"
+name = "sys-tools"
 version = "0.1.0"
 description = "A plugin that provides System Tools functionality for reading, writing, executing files, working with folders"
 authors = [
-    { name = "Luke Hinds (Red Dot Rocket)", email = "your.email@example.com" }
+    { name = "Luke Hinds (Red Dot Rocket)", email = "luke@rdrocket.com" }
 ]
 dependencies = [
     "agentup>=0.1.0",
     "pluggy>=1.5.0",
 ]
 
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
 [project.entry-points."agentup.skills"]
-system_tools = "system_tools.plugin:Plugin"
+sys_tools = "sys_tools.plugin:Plugin"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
