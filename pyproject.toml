@@ -1,5 +1,5 @@
 [project]
-name = "sys-tools"
+name = "agentup-sys-tools"
 version = "0.1.0"
 description = "A plugin that provides System Tools functionality for reading, writing, executing files, working with folders"
 authors = [
@@ -13,6 +13,7 @@ dependencies = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Framework :: AgentUp :: Plugin",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
