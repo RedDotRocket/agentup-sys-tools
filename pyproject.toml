@@ -5,11 +5,11 @@ description = "A plugin that provides System Tools functionality for reading, wr
 authors = [
     { name = "Luke Hinds (Red Dot Rocket)", email = "luke@rdrocket.com" }
 ]
+requires-python = ">=3.11"
 dependencies = [
     "agentup>=0.1.0",
     "pluggy>=1.5.0",
 ]
-
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -18,6 +18,16 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "bandit>=1.7.0",
+    "mypy>=1.0.0",
 ]
 
 [project.entry-points."agentup.skills"]

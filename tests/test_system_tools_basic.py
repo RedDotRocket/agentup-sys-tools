@@ -4,11 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest  # noqa: F401
-from agent.plugins import (
-    SkillCapability,
-    SkillInfo,
-    ValidationResult
-)
+from agent.plugins import SkillCapability, SkillInfo, ValidationResult
 
 from sys_tools.plugin import Plugin
 from sys_tools.security import SecurityManager
@@ -37,7 +33,7 @@ class TestBasicFunctionality:
         # Valid config
         config = {
             "max_file_size": 5242880,  # 5MB
-            "allow_command_execution": True
+            "allow_command_execution": True,
         }
 
         result = plugin.validate_config(config)
@@ -55,9 +51,16 @@ class TestBasicFunctionality:
         # Check function names
         function_names = [f.name for f in functions]
         expected_functions = [
-            "read_file", "write_file", "file_exists", "get_file_info",
-            "list_directory", "create_directory", "delete_file",
-            "get_system_info", "get_working_directory", "execute_command"
+            "read_file",
+            "write_file",
+            "file_exists",
+            "get_file_info",
+            "list_directory",
+            "create_directory",
+            "delete_file",
+            "get_system_info",
+            "get_working_directory",
+            "execute_command",
         ]
 
         for func_name in expected_functions:
@@ -69,14 +72,14 @@ class TestBasicFunctionality:
 
         # Test system info
         result = await plugin._get_system_info_internal()
-        assert result['success']
-        assert 'platform' in result['data']
-        assert 'python_version' in result['data']
+        assert result["success"]
+        assert "platform" in result["data"]
+        assert "python_version" in result["data"]
 
         # Test working directory
         result = await plugin._get_working_directory_internal()
-        assert result['success']
-        assert 'path' in result['data']
+        assert result["success"]
+        assert "path" in result["data"]
 
     async def test_command_execution(self):
         """Test safe command execution."""
@@ -84,14 +87,14 @@ class TestBasicFunctionality:
 
         # Test allowed command
         result = await plugin._execute_command_internal("echo 'Hello World'")
-        assert result['success']
-        assert "Hello World" in result['data']['stdout']
-        assert result['data']['returncode'] == 0
+        assert result["success"]
+        assert "Hello World" in result["data"]["stdout"]
+        assert result["data"]["returncode"] == 0
 
         # Test disallowed command
         result = await plugin._execute_command_internal("rm -rf /")
-        assert not result['success']
-        assert "not in allowed list" in result['error']
+        assert not result["success"]
+        assert "not in allowed list" in result["error"]
 
     async def test_file_operations_with_temp_workspace(self):
         """Test file operations with a temporary workspace."""
@@ -104,8 +107,8 @@ class TestBasicFunctionality:
 
             # Test write file
             result = await plugin._write_file_internal("test.txt", "Hello, World!")
-            assert result['success']
-            assert not result['data']['overwritten']
+            assert result["success"]
+            assert not result["data"]["overwritten"]
 
             # Verify file was created
             test_file = temp_dir / "test.txt"
@@ -114,24 +117,24 @@ class TestBasicFunctionality:
 
             # Test read file
             result = await plugin._internal_read_file("test.txt")
-            assert result['success']
-            assert result['data']['content'] == "Hello, World!"
+            assert result["success"]
+            assert result["data"]["content"] == "Hello, World!"
 
             # Test file exists
             result = await plugin._file_exists_internal("test.txt")
-            assert result['success']
-            assert result['data']['exists']
-            assert result['data']['is_file']
+            assert result["success"]
+            assert result["data"]["exists"]
+            assert result["data"]["is_file"]
 
             # Test get file info
             result = await plugin._get_file_info_internal("test.txt")
-            assert result['success']
-            assert result['data']['name'] == "test.txt"
-            assert result['data']['size'] == len("Hello, World!")
+            assert result["success"]
+            assert result["data"]["name"] == "test.txt"
+            assert result["data"]["size"] == len("Hello, World!")
 
             # Test directory operations
             result = await plugin._create_directory_internal("newdir")
-            assert result['success']
+            assert result["success"]
 
             new_dir = temp_dir / "newdir"
             assert new_dir.exists()
@@ -139,16 +142,16 @@ class TestBasicFunctionality:
 
             # Test list directory
             result = await plugin._list_directory_internal(".")
-            assert result['success']
-            assert result['data']['count'] == 2  # test.txt and newdir
+            assert result["success"]
+            assert result["data"]["count"] == 2  # test.txt and newdir
 
-            names = [e['name'] for e in result['data']['entries']]
+            names = [e["name"] for e in result["data"]["entries"]]
             assert "test.txt" in names
             assert "newdir" in names
 
             # Test delete file
             result = await plugin._delete_file_internal("test.txt")
-            assert result['success']
+            assert result["success"]
             assert not test_file.exists()
 
     async def test_security_features(self):
@@ -157,13 +160,13 @@ class TestBasicFunctionality:
 
         # Test path traversal prevention
         result = await plugin._internal_read_file("../../../etc/passwd")
-        assert not result['success']
-        assert "dangerous" in result['error'].lower()
+        assert not result["success"]
+        assert "dangerous" in result["error"].lower()
 
         # Test disallowed command (use a command that's definitely not allowed)
         result = await plugin._execute_command_internal("sudo rm -rf /")
-        assert not result['success']
-        assert "not in allowed list" in result['error']
+        assert not result["success"]
+        assert "not in allowed list" in result["error"]
 
     async def test_natural_language_execution(self):
         """Test natural language execution."""
@@ -192,18 +195,16 @@ class TestBasicFunctionality:
 
             # Create proper context with task metadata (AgentUp's parameter passing)
             from sys_tools.plugin import SkillContext
-            task = Mock()
-            task.metadata = {'path': 'func_test.txt'}
 
-            context = SkillContext(
-                task=task,
-                metadata={'parameters': {}}
-            )
+            task = Mock()
+            task.metadata = {"path": "func_test.txt"}
+
+            context = SkillContext(task=task, metadata={"parameters": {}})
 
             # Test the AI function wrapper directly
             result = await plugin._ai_read_file(task, context)
             assert result.success
 
             data = json.loads(result.content)
-            assert data['success']
-            assert data['data']['content'] == "Function test"
+            assert data["success"]
+            assert data["data"]["content"] == "Function test"
