@@ -6,6 +6,9 @@
 
 This plugin provides safe, controlled access to system operations including file I/O, directory management, and system information retrieval.
 
+If you need any more tool calls or functionality, please create an issue in the repository
+or go ahead and implement it yourself!
+
 ## Tool Capabilities
 
 ### File Operations
@@ -83,66 +86,6 @@ The plugin responds to natural language requests:
 "What operating system am I running on?"
 ```
 
-### AI Function Calls
-
-The plugin provides AI-callable functions that can be used by LLMs:
-
-#### Read a File
-```json
-{
-  "name": "read_file",
-  "parameters": {
-    "path": "data/config.json",
-    "encoding": "utf-8"
-  }
-}
-```
-
-#### Write a File
-```json
-{
-  "name": "write_file",
-  "parameters": {
-    "path": "output/results.txt",
-    "content": "Processing complete!",
-    "create_parents": true
-  }
-}
-```
-
-#### List Directory Contents
-```json
-{
-  "name": "list_directory",
-  "parameters": {
-    "path": "src",
-    "pattern": "*.py",
-    "recursive": true
-  }
-}
-```
-
-#### Get File Information
-```json
-{
-  "name": "get_file_info",
-  "parameters": {
-    "path": "document.pdf"
-  }
-}
-```
-
-#### Execute Safe Command
-```json
-{
-  "name": "execute_command",
-  "parameters": {
-    "command": "ls -la",
-    "timeout": 30
-  }
-}
-```
-
 ## Security Considerations
 
 ### Path Security
@@ -166,107 +109,6 @@ The plugin provides AI-callable functions that can be used by LLMs:
 - Configurable via `max_file_size` setting
 - Large files are truncated with notification
 
-## Response Format
-
-All operations return a standardized response format:
-
-### Success Response
-```json
-{
-  "success": true,
-  "data": {
-    // Operation-specific data
-  },
-  "operation": "operation_name",
-  "message": "Optional success message"
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": "Error description",
-  "error_type": "ErrorClassName",
-  "operation": "operation_name",
-  "message": "operation_name failed: Error description"
-}
-```
-
-## Development
-
-### Running Tests
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=sys_tools --cov-report=html
-
-# Run specific test categories
-pytest tests/test_sys_tools.py::TestFileOperations -v
-```
-
-### Adding New Operations
-
-1. Add the operation handler to `plugin.py`:
-```python
-def _my_operation(self, param1: str) -> dict[str, Any]:
-    """Perform my operation."""
-    try:
-        # Validate inputs
-        validated_path = self.security.validate_path(param1)
-
-        # Perform operation
-        result = do_something(validated_path)
-
-        # Return standardized response
-        return create_success_response(
-            {"result": result},
-            "my_operation"
-        )
-    except Exception as e:
-        return create_error_response(e, "my_operation")
-```
-
-2. Register it as an AI function in `get_ai_functions()`:
-```python
-AIFunction(
-    name="my_operation",
-    description="Description for LLM",
-    parameters={
-        "type": "object",
-        "properties": {
-            "param1": {
-                "type": "string",
-                "description": "Parameter description"
-            }
-        },
-        "required": ["param1"]
-    },
-    handler=self._my_operation
-)
-```
-
-3. Add tests in `test_sys_tools.py`
-
-## Error Handling
-
-The plugin provides detailed error messages for common scenarios:
-
-- **File Not Found**: Clear indication of missing files
-- **Permission Denied**: When lacking file system permissions
-- **Security Violations**: Path traversal attempts, workspace violations
-- **Size Limits**: When files exceed configured limits
-- **Invalid Operations**: Type mismatches, invalid parameters
-
-## Performance Considerations
-
-- File operations use buffered I/O for efficiency
-- Large directories are listed iteratively
-- Commands have configurable timeouts
-- Atomic writes prevent partial file corruption
-
 ## Contributing
 
 1. Fork the repository
@@ -275,13 +117,8 @@ The plugin provides detailed error messages for common scenarios:
 4. Ensure all tests pass
 5. Submit a pull request
 
-## License
-
-This plugin is part of the AgentUp ecosystem and follows the same licensing, the Apache License 2.0. See the LICENSE file for details.
-
 ## Support
 
 For issues, questions, or contributions:
 - Create an issue in the repository
-- Check the CLAUDE.md file for development guidelines
 - Refer to AgentUp documentation for plugin development
