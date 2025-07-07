@@ -46,7 +46,7 @@ class TestBasicFunctionality:
         plugin = Plugin()
         functions = plugin.get_ai_functions()
 
-        assert len(functions) == 10  # We registered 10 functions
+        assert len(functions) == 11  # We registered 11 functions
 
         # Check function names
         function_names = [f.name for f in functions]
