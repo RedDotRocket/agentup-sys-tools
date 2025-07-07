@@ -15,6 +15,7 @@ from agent.plugins import (
     ValidationResult,
 )
 
+from .hashing import FileHasher
 from .security import SecurityError, SecurityManager
 from .utils import (
     create_error_response,
@@ -37,6 +38,7 @@ class Plugin:
         """Initialize the plugin."""
         self.name = "system-tools"
         self.security = SecurityManager()
+        self.hasher = FileHasher(self.security)
 
     @hookimpl
     def register_skill(self) -> SkillInfo:
@@ -140,6 +142,19 @@ class Plugin:
             "file system": 0.9,
             "filesystem": 0.9,
             "path": 0.7,
+            # File hashing
+            "hash": 1.0,
+            "checksum": 1.0,
+            "digest": 1.0,
+            "sha256": 1.0,
+            "sha512": 1.0,
+            "sha1": 1.0,
+            "md5": 1.0,
+            "hash file": 1.0,
+            "file hash": 1.0,
+            "calculate hash": 1.0,
+            "compute hash": 1.0,
+            "verify hash": 1.0,
         }
 
         confidence = 0.0
@@ -191,9 +206,11 @@ class Plugin:
             "- Write file: 'write file <path> with content <content>'",
             "- List directory: 'list files in <path>'",
             "- File info: 'get info for file <path>'",
+            "- File hash: 'get hash for file <path>' or 'calculate sha256 of <path>'",
             "- System info: 'show system information'",
             "- Current directory: 'what is the current directory'",
             "",
+            "Hash algorithms supported: MD5, SHA1, SHA256, SHA512",
             "For best results, use the AI function interface.",
         ]
 
@@ -495,6 +512,27 @@ class Plugin:
             )
         except Exception as e:
             return create_error_response(e, "execute_command")
+
+    async def _get_file_hash_internal(
+        self,
+        path: str,
+        algorithms: list[str] | None = None,
+        output_format: str = "hex",
+        include_file_info: bool = True,
+    ) -> dict[str, Any]:
+        """Internal get_file_hash implementation."""
+        try:
+            # Initialize hasher if not already done
+            if not hasattr(self, "hasher"):
+                self.hasher = FileHasher(self.security)
+
+            # Use the hasher to compute file hash(es)
+            result = self.hasher.hash_file_with_info(
+                path, algorithms, output_format, include_file_info
+            )
+            return result
+        except Exception as e:
+            return create_error_response(e, "get_file_hash")
 
     # Direct method interfaces (called by AgentUp's function dispatcher)
     # These methods return JSON strings and handle direct function calls
@@ -880,6 +918,28 @@ class Plugin:
             error_result = create_error_response(e, "execute_command")
             return json.dumps(error_result, indent=2)
 
+    async def _get_file_hash(
+        self,
+        path: str,
+        algorithms: list[str] | None = None,
+        output_format: str = "hex",
+        include_file_info: bool = True,
+        **kwargs,
+    ) -> str:
+        """Direct method interface for get_file_hash function calls."""
+        try:
+            result = await self._get_file_hash_internal(
+                path, algorithms, output_format, include_file_info
+            )
+            import json
+
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            import json
+
+            error_result = create_error_response(e, "get_file_hash")
+            return json.dumps(error_result, indent=2)
+
     # AI Function Wrappers (AgentUp expects these to follow (task, context) signature)
     async def _ai_read_file(self, task, context: SkillContext) -> SkillResult:
         """AI function wrapper for read_file."""
@@ -1105,6 +1165,28 @@ class Plugin:
                 error=str(e),
             )
 
+    async def _ai_get_file_hash(self, task, context: SkillContext) -> SkillResult:
+        """AI function wrapper for get_file_hash."""
+        params = context.metadata.get("parameters", {})
+        task_metadata = (
+            task.metadata if hasattr(task, "metadata") and task.metadata else {}
+        )
+        if not params and task_metadata:
+            params = task_metadata
+        try:
+            result = await self._get_file_hash_internal(**params)
+            return SkillResult(
+                content=json.dumps(result, indent=2),
+                success=result.get("success", True),
+                metadata={"skill": "sys_tools", "function": "get_file_hash"},
+            )
+        except Exception as e:
+            return SkillResult(
+                content=json.dumps(create_error_response(e, "get_file_hash")),
+                success=False,
+                error=str(e),
+            )
+
     @hookimpl
     def get_ai_functions(self) -> list[AIFunction]:
         """Provide AI-callable functions."""
@@ -1285,5 +1367,37 @@ class Plugin:
                     "required": ["command"],
                 },
                 handler=self._ai_execute_command,
+            ),
+            # File hashing
+            AIFunction(
+                name="get_file_hash",
+                description="Compute cryptographic hash(es) for a file (SHA256, SHA512, SHA1, MD5)",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "Path to the file to hash",
+                        },
+                        "algorithms": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of hash algorithms to use (default: ['sha256']). Options: md5, sha1, sha256, sha512",
+                        },
+                        "output_format": {
+                            "type": "string",
+                            "description": "Output format for hashes (default: 'hex')",
+                            "enum": ["hex", "base64"],
+                            "default": "hex",
+                        },
+                        "include_file_info": {
+                            "type": "boolean",
+                            "description": "Include file information in the response (default: true)",
+                            "default": True,
+                        },
+                    },
+                    "required": ["path"],
+                },
+                handler=self._ai_get_file_hash,
             ),
         ]

@@ -16,6 +16,7 @@ or go ahead and implement it yourself!
 - **Write File** - Write content to files with atomic operations and parent directory creation
 - **Check File Exists** - Verify if a file or directory exists
 - **Get File Info** - Retrieve detailed metadata about files and directories
+- **Get File Hash** - Compute cryptographic hashes (MD5, SHA1, SHA256, SHA512) with hex/base64 output
 
 ### Directory Operations
 - **List Directory** - List directory contents with pattern matching and recursive options
@@ -84,6 +85,8 @@ The plugin responds to natural language requests:
 "List all Python files in the src directory"
 "Create a new folder called outputs"
 "What operating system am I running on?"
+"Calculate the SHA256 hash of package.json"
+"Get MD5 and SHA1 hashes for data.bin"
 ```
 
 ## Security Considerations
