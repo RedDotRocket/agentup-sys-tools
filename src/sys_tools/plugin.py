@@ -31,6 +31,208 @@ from .utils import (
 hookimpl = pluggy.HookimplMarker("agentup")
 
 
+# Capability configuration data
+CAPABILITIES_CONFIG = [
+    {
+        "id": "file_read",
+        "name": "File Read",
+        "description": "Read contents of files",
+        "capabilities": [CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
+        "tags": ["files", "read", "io"],
+        "ai_function": {
+            "name": "read_file",
+            "description": "Read the contents of a file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the file to read"},
+                    "encoding": {"type": "string", "description": "Text encoding (default: utf-8)", "default": "utf-8"},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "id": "file_write",
+        "name": "File Write",
+        "description": "Write content to files",
+        "capabilities": [CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
+        "tags": ["files", "write", "io"],
+        "ai_function": {
+            "name": "write_file",
+            "description": "Write content to a file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the file to write"},
+                    "content": {"type": "string", "description": "Content to write to the file"},
+                    "encoding": {"type": "string", "description": "Text encoding (default: utf-8)", "default": "utf-8"},
+                    "create_parents": {"type": "boolean", "description": "Create parent directories if needed", "default": True},
+                },
+                "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "id": "file_exists",
+        "name": "File Exists",
+        "description": "Check if a file or directory exists",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["files", "check"],
+        "ai_function": {
+            "name": "file_exists",
+            "description": "Check if a file or directory exists",
+            "parameters": {
+                "type": "object",
+                "properties": {"path": {"type": "string", "description": "Path to check"}},
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "id": "file_info",
+        "name": "File Info",
+        "description": "Get detailed information about a file or directory",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["files", "info"],
+        "ai_function": {
+            "name": "get_file_info",
+            "description": "Get detailed information about a file or directory",
+            "parameters": {
+                "type": "object",
+                "properties": {"path": {"type": "string", "description": "Path to the file or directory"}},
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "id": "list_directory",
+        "name": "List Directory",
+        "description": "List contents of a directory",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["directories", "list"],
+        "ai_function": {
+            "name": "list_directory",
+            "description": "List contents of a directory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Directory path (default: current directory)", "default": "."},
+                    "pattern": {"type": "string", "description": "Glob pattern to filter results (e.g., '*.txt')"},
+                    "recursive": {"type": "boolean", "description": "List recursively", "default": False},
+                },
+            },
+        },
+    },
+    {
+        "id": "create_directory",
+        "name": "Create Directory",
+        "description": "Create a new directory",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["directories", "create"],
+        "ai_function": {
+            "name": "create_directory",
+            "description": "Create a new directory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path of directory to create"},
+                    "parents": {"type": "boolean", "description": "Create parent directories if needed", "default": True},
+                    "exist_ok": {"type": "boolean", "description": "Don't raise error if directory exists", "default": True},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "id": "delete_file",
+        "name": "Delete File",
+        "description": "Delete a file or directory",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["files", "delete"],
+        "ai_function": {
+            "name": "delete_file",
+            "description": "Delete a file or directory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to delete"},
+                    "recursive": {"type": "boolean", "description": "Delete directories recursively", "default": False},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "id": "system_info",
+        "name": "System Info",
+        "description": "Get system and platform information",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["system", "info"],
+        "ai_function": {
+            "name": "get_system_info",
+            "description": "Get system and platform information",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "id": "working_directory",
+        "name": "Working Directory",
+        "description": "Get the current working directory",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["system", "directory"],
+        "ai_function": {
+            "name": "get_working_directory",
+            "description": "Get the current working directory",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "id": "execute_command",
+        "name": "Execute Command",
+        "description": "Execute a safe shell command",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["system", "command", "execute"],
+        "ai_function": {
+            "name": "execute_command",
+            "description": "Execute a safe shell command (limited to whitelist)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "Command to execute"},
+                    "timeout": {"type": "integer", "description": "Timeout in seconds", "default": 30},
+                },
+                "required": ["command"],
+            },
+        },
+    },
+    {
+        "id": "file_hash",
+        "name": "File Hash",
+        "description": "Compute cryptographic hash(es) for a file",
+        "capabilities": [CapabilityType.AI_FUNCTION],
+        "tags": ["files", "hash", "security"],
+        "ai_function": {
+            "name": "get_file_hash",
+            "description": "Compute cryptographic hash(es) for a file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the file"},
+                    "algorithms": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["md5", "sha1", "sha256", "sha512"]},
+                        "description": "Hash algorithms to use",
+                        "default": ["sha256"],
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
+]
+
+
 class Plugin:
     """Main plugin class for System Tools."""
 
@@ -40,10 +242,60 @@ class Plugin:
         self.security = SecurityManager()
         self.hasher = FileHasher(self.security)
 
-    @hookimpl
-    def register_capability(self) -> list[CapabilityInfo]:
-        """Register the system tools capabilities."""
-        base_config_schema = {
+        # Build handler mapping from configuration using generic wrapper factory
+        self._handlers = {
+            config["id"]: self._create_ai_wrapper(config["id"], config["ai_function"]["name"])
+            for config in CAPABILITIES_CONFIG
+        }
+
+    def _create_ai_wrapper(self, capability_id: str, function_name: str):
+        """Create a generic AI wrapper function for a capability."""
+        # Map function names to their internal implementation methods
+        internal_methods = {
+            "read_file": self._internal_read_file,
+            "write_file": self._write_file_internal,
+            "file_exists": self._file_exists_internal,
+            "get_file_info": self._get_file_info_internal,
+            "list_directory": self._list_directory_internal,
+            "create_directory": self._create_directory_internal,
+            "delete_file": self._delete_file_internal,
+            "get_system_info": self._get_system_info_internal,
+            "get_working_directory": self._get_working_directory_internal,
+            "execute_command": self._execute_command_internal,
+            "get_file_hash": self._get_file_hash_internal,
+        }
+
+        async def ai_wrapper(task, context: CapabilityContext) -> CapabilityResult:
+            """Generic AI function wrapper."""
+            # Extract parameters from context
+            params = context.metadata.get("parameters", {})
+            task_metadata = (
+                task.metadata if hasattr(task, "metadata") and task.metadata else {}
+            )
+            if not params and task_metadata:
+                params = task_metadata
+
+            try:
+                # Call the appropriate internal method
+                internal_method = internal_methods[function_name]
+                result = await internal_method(**params)
+                return CapabilityResult(
+                    content=json.dumps(result, indent=2),
+                    success=result.get("success", True),
+                    metadata={"capability": "sys_tools", "function": function_name},
+                )
+            except Exception as e:
+                return CapabilityResult(
+                    content=json.dumps(create_error_response(e, function_name)),
+                    success=False,
+                    error=str(e),
+                )
+
+        return ai_wrapper
+
+    def _create_base_config_schema(self) -> dict:
+        """Create the base configuration schema shared across capabilities."""
+        return {
             "type": "object",
             "properties": {
                 "workspace_dir": {
@@ -62,119 +314,24 @@ class Plugin:
                 }
             }
         }
-        
-        return [
-            CapabilityInfo(
-                id="file_read",
-                name="File Read",
-                version="0.2.0",
-                description="Read contents of files",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
-                tags=["files", "read", "io"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="file_write",
-                name="File Write",
-                version="0.2.0",
-                description="Write content to files",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
-                tags=["files", "write", "io"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="file_exists",
-                name="File Exists",
-                version="0.2.0",
-                description="Check if a file or directory exists",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["files", "check"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="file_info",
-                name="File Info",
-                version="0.2.0",
-                description="Get detailed information about a file or directory",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["files", "info"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="list_directory",
-                name="List Directory",
-                version="0.2.0",
-                description="List contents of a directory",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["directories", "list"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="create_directory",
-                name="Create Directory",
-                version="0.2.0",
-                description="Create a new directory",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["directories", "create"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="delete_file",
-                name="Delete File",
-                version="0.2.0",
-                description="Delete a file or directory",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["files", "delete"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="system_info",
-                name="System Info",
-                version="0.2.0",
-                description="Get system and platform information",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["system", "info"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="working_directory",
-                name="Working Directory",
-                version="0.2.0",
-                description="Get the current working directory",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["system", "directory"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="execute_command",
-                name="Execute Command",
-                version="0.2.0",
-                description="Execute a safe shell command",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["system", "command", "execute"],
-                config_schema=base_config_schema
-            ),
-            CapabilityInfo(
-                id="file_hash",
-                name="File Hash",
-                version="0.2.0",
-                description="Compute cryptographic hash(es) for a file",
-                plugin_name="sys_tools",
-                capabilities=[CapabilityType.AI_FUNCTION],
-                tags=["files", "hash", "security"],
-                config_schema=base_config_schema
-            ),
-        ]
+
+    def _create_capability_info(self, config: dict) -> CapabilityInfo:
+        """Create a CapabilityInfo object from configuration."""
+        return CapabilityInfo(
+            id=config["id"],
+            name=config["name"],
+            version="0.2.0",
+            description=config["description"],
+            plugin_name="sys_tools",
+            capabilities=config["capabilities"],
+            tags=config["tags"],
+            config_schema=self._create_base_config_schema()
+        )
+
+    @hookimpl
+    def register_capability(self) -> list[CapabilityInfo]:
+        """Register the system tools capabilities."""
+        return [self._create_capability_info(config) for config in CAPABILITIES_CONFIG]
 
     @hookimpl
     def validate_config(self, config: dict) -> ValidationResult:
@@ -275,24 +432,10 @@ class Plugin:
         try:
             # Get the specific capability being invoked
             capability_id = context.metadata.get("capability_id", "unknown")
-            
-            # Route to specific capability handler based on capability_id
-            capability_map = {
-                "file_read": self._ai_read_file,
-                "file_write": self._ai_write_file,
-                "file_exists": self._ai_file_exists,
-                "file_info": self._ai_get_file_info,
-                "list_directory": self._ai_list_directory,
-                "create_directory": self._ai_create_directory,
-                "delete_file": self._ai_delete_file,
-                "system_info": self._ai_get_system_info,
-                "working_directory": self._ai_get_working_directory,
-                "execute_command": self._ai_execute_command,
-                "file_hash": self._ai_get_file_hash,
-            }
-            
-            if capability_id in capability_map:
-                handler = capability_map[capability_id]
+
+            # Route to specific capability handler using the handlers mapping
+            if capability_id in self._handlers:
+                handler = self._handlers[capability_id]
                 return await handler(context.task, context)
             else:
                 # Fallback to natural language processing for unknown capabilities
@@ -1067,493 +1210,25 @@ class Plugin:
             error_result = create_error_response(e, "get_file_hash")
             return json.dumps(error_result, indent=2)
 
-    # AI Function Wrappers (AgentUp expects these to follow (task, context) signature)
-    async def _ai_read_file(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for read_file."""
-        # Get parameters from task metadata (AgentUp's parameter passing mechanism)
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
+    def _create_ai_function(self, config: dict) -> AIFunction:
+        """Create an AIFunction from configuration."""
+        ai_func_config = config["ai_function"]
+        return AIFunction(
+            name=ai_func_config["name"],
+            description=ai_func_config["description"],
+            parameters=ai_func_config["parameters"],
+            handler=self._handlers[config["id"]],
         )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._internal_read_file(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "read_file"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "read_file")),
-                success=False,
-                error=str(e),
-            )
 
-    async def _ai_write_file(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for write_file."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._write_file_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "write_file"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "write_file")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_file_exists(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for file_exists."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            # Call the internal method directly, not the string-returning direct method
-            result = await self._file_exists_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "file_exists"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "file_exists")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_get_file_info(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for get_file_info."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._get_file_info_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "get_file_info"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "get_file_info")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_list_directory(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for list_directory."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._list_directory_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "list_directory"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "list_directory")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_create_directory(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for create_directory."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._create_directory_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "create_directory"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "create_directory")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_delete_file(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for delete_file."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._delete_file_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "delete_file"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "delete_file")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_get_system_info(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for get_system_info."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._get_system_info_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "get_system_info"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "get_system_info")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_get_working_directory(
-        self, task, context: CapabilityContext
-    ) -> CapabilityResult:
-        """AI function wrapper for get_working_directory."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._get_working_directory_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "get_working_directory"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "get_working_directory")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_execute_command(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for execute_command."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._execute_command_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "execute_command"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "execute_command")),
-                success=False,
-                error=str(e),
-            )
-
-    async def _ai_get_file_hash(self, task, context: CapabilityContext) -> CapabilityResult:
-        """AI function wrapper for get_file_hash."""
-        params = context.metadata.get("parameters", {})
-        task_metadata = (
-            task.metadata if hasattr(task, "metadata") and task.metadata else {}
-        )
-        if not params and task_metadata:
-            params = task_metadata
-        try:
-            result = await self._get_file_hash_internal(**params)
-            return CapabilityResult(
-                content=json.dumps(result, indent=2),
-                success=result.get("success", True),
-                metadata={"capability": "sys_tools", "function": "get_file_hash"},
-            )
-        except Exception as e:
-            return CapabilityResult(
-                content=json.dumps(create_error_response(e, "get_file_hash")),
-                success=False,
-                error=str(e),
-            )
-
-    @hookimpl  
+    @hookimpl
     def get_ai_functions(self, capability_id: str = None) -> list[AIFunction]:
         """Provide AI-callable functions for a specific capability."""
-        # Map each capability to its specific AI function
-        capability_functions = {
-            "file_read": [
-                AIFunction(
-                    name="read_file",
-                    description="Read the contents of a file",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Path to the file to read",
-                            },
-                            "encoding": {
-                                "type": "string",
-                                "description": "Text encoding (default: utf-8)",
-                                "default": "utf-8",
-                            },
-                        },
-                        "required": ["path"],
-                    },
-                    handler=self._ai_read_file,
-                )
-            ],
-            "file_write": [
-                AIFunction(
-                    name="write_file",
-                    description="Write content to a file",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Path to the file to write",
-                            },
-                            "content": {
-                                "type": "string",
-                                "description": "Content to write to the file",
-                            },
-                            "encoding": {
-                                "type": "string",
-                                "description": "Text encoding (default: utf-8)",
-                                "default": "utf-8",
-                            },
-                            "create_parents": {
-                                "type": "boolean",
-                                "description": "Create parent directories if needed",
-                                "default": True,
-                            },
-                        },
-                        "required": ["path", "content"],
-                    },
-                    handler=self._ai_write_file,
-                )
-            ],
-            "file_exists": [
-                AIFunction(
-                    name="file_exists",
-                    description="Check if a file or directory exists",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {"type": "string", "description": "Path to check"}
-                        },
-                        "required": ["path"],
-                    },
-                    handler=self._ai_file_exists,
-                )
-            ],
-            "file_info": [
-                AIFunction(
-                    name="get_file_info",
-                    description="Get detailed information about a file or directory",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Path to the file or directory",
-                            }
-                        },
-                        "required": ["path"],
-                    },
-                    handler=self._ai_get_file_info,
-                )
-            ],
-            "list_directory": [
-                AIFunction(
-                    name="list_directory",
-                    description="List contents of a directory",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Directory path (default: current directory)",
-                                "default": ".",
-                            },
-                            "pattern": {
-                                "type": "string",
-                                "description": "Glob pattern to filter results (e.g., '*.txt')",
-                            },
-                            "recursive": {
-                                "type": "boolean",
-                                "description": "List recursively",
-                                "default": False,
-                            },
-                        },
-                    },
-                    handler=self._ai_list_directory,
-                )
-            ],
-            "create_directory": [
-                AIFunction(
-                    name="create_directory",
-                    description="Create a new directory",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Path of directory to create",
-                            },
-                            "parents": {
-                                "type": "boolean",
-                                "description": "Create parent directories if needed",
-                                "default": True,
-                            },
-                            "exist_ok": {
-                                "type": "boolean",
-                                "description": "Don't raise error if directory exists",
-                                "default": True,
-                            },
-                        },
-                        "required": ["path"],
-                    },
-                    handler=self._ai_create_directory,
-                )
-            ],
-            "delete_file": [
-                AIFunction(
-                    name="delete_file",
-                    description="Delete a file or directory",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {"type": "string", "description": "Path to delete"},
-                            "recursive": {
-                                "type": "boolean",
-                                "description": "Delete directories recursively",
-                                "default": False,
-                            },
-                        },
-                        "required": ["path"],
-                    },
-                    handler=self._ai_delete_file,
-                )
-            ],
-            "system_info": [
-                AIFunction(
-                    name="get_system_info",
-                    description="Get system and platform information",
-                    parameters={"type": "object", "properties": {}},
-                    handler=self._ai_get_system_info,
-                )
-            ],
-            "working_directory": [
-                AIFunction(
-                    name="get_working_directory",
-                    description="Get the current working directory",
-                    parameters={"type": "object", "properties": {}},
-                    handler=self._ai_get_working_directory,
-                )
-            ],
-            "execute_command": [
-                AIFunction(
-                    name="execute_command",
-                    description="Execute a safe shell command (limited to whitelist)",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "command": {
-                                "type": "string",
-                                "description": "Command to execute",
-                            },
-                            "timeout": {
-                                "type": "integer",
-                                "description": "Timeout in seconds",
-                                "default": 30,
-                            },
-                        },
-                        "required": ["command"],
-                    },
-                    handler=self._ai_execute_command,
-                )
-            ],
-            "file_hash": [
-                AIFunction(
-                    name="get_file_hash",
-                    description="Compute cryptographic hash(es) for a file (SHA256, SHA512, SHA1, MD5)",
-                    parameters={
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Path to the file to hash",
-                            },
-                            "algorithms": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "List of hash algorithms to use (default: ['sha256']). Options: md5, sha1, sha256, sha512",
-                            },
-                            "output_format": {
-                                "type": "string",
-                                "description": "Output format for hashes (default: 'hex')",
-                                "enum": ["hex", "base64"],
-                                "default": "hex",
-                            },
-                            "include_file_info": {
-                                "type": "boolean",
-                                "description": "Include file information in the response (default: true)",
-                                "default": True,
-                            },
-                        },
-                        "required": ["path"],
-                    },
-                    handler=self._ai_get_file_hash,
-                )
-            ],
-        }
-        
-        # Return the specific function(s) for this capability
-        if capability_id and capability_id in capability_functions:
-            return capability_functions[capability_id]
-        
-        # Fallback: return all functions (for backward compatibility)
-        all_functions = []
-        for functions in capability_functions.values():
-            all_functions.extend(functions)
-        return all_functions
+        # Return the specific function for this capability
+        if capability_id:
+            config = next((c for c in CAPABILITIES_CONFIG if c["id"] == capability_id), None)
+            if config:
+                return [self._create_ai_function(config)]
+            return []
+
+        # Return all functions (for backward compatibility)
+        return [self._create_ai_function(config) for config in CAPABILITIES_CONFIG]

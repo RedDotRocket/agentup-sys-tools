@@ -58,8 +58,8 @@ agentup plugin install system-tools
 Add the sys_tools skill to your agent's `agent_config.yaml`:
 
 ```yaml
-skills:
-  - skill_id: sys_tools
+plugins:
+  - plugin_id: sys_tools
     name: System Tools
     description: System tools for basic operations
     input_mode: text
