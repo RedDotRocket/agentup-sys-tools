@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest  # noqa: F401
-from agent.plugins import SkillCapability, SkillInfo, ValidationResult
+from agent.plugins import CapabilityType, CapabilityInfo, ValidationResult
 
 from sys_tools.plugin import Plugin
 from sys_tools.security import SecurityManager
@@ -16,14 +16,14 @@ class TestBasicFunctionality:
     def test_plugin_registration(self):
         """Test that the plugin registers correctly."""
         plugin = Plugin()
-        skill_info = plugin.register_skill()
+        skill_info = plugin.register_capability()
 
-        assert isinstance(skill_info, SkillInfo)
+        assert isinstance(skill_info, CapabilityInfo)
         assert skill_info.id == "sys_tools"
         assert skill_info.name == "System Tools"
-        assert skill_info.version == "0.1.0"
-        assert SkillCapability.TEXT in skill_info.capabilities
-        assert SkillCapability.AI_FUNCTION in skill_info.capabilities
+        assert skill_info.version == "0.2.0"
+        assert CapabilityType.TEXT in skill_info.capabilities
+        assert CapabilityType.AI_FUNCTION in skill_info.capabilities
         assert "system-tools" in skill_info.tags
 
     def test_config_validation(self):
@@ -178,7 +178,7 @@ class TestBasicFunctionality:
         context.task = Mock()
         context.task.history = [Mock(parts=[Mock(text="help me with files")])]
 
-        result = await plugin.execute_skill(context)
+        result = await plugin.execute_capability(context)
         assert result.success
         assert "Available operations" in result.content
 
@@ -194,12 +194,12 @@ class TestBasicFunctionality:
             plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
             # Create proper context with task metadata (AgentUp's parameter passing)
-            from sys_tools.plugin import SkillContext
+            from sys_tools.plugin import CapabilityContext
 
             task = Mock()
             task.metadata = {"path": "func_test.txt"}
 
-            context = SkillContext(task=task, metadata={"parameters": {}})
+            context = CapabilityContext(task=task, metadata={"parameters": {}})
 
             # Test the AI function wrapper directly
             result = await plugin._ai_read_file(task, context)

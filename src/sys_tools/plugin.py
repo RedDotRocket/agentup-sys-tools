@@ -41,35 +41,140 @@ class Plugin:
         self.hasher = FileHasher(self.security)
 
     @hookimpl
-    def register_capability(self) -> CapabilityInfo:
-        """Register the system tools capability."""
-        return CapabilityInfo(
-            id="sys_tools",
-            name="System Tools",
-            version="0.2.0",
-            description="Provides safe, controlled access to system operations including file I/O, directory management, and system information retrieval",
-            capabilities=[CapabilityType.AI_FUNCTION],
-            tags=["system", "files", "directories", "security"],
-            config_schema={
-                "type": "object",
-                "properties": {
-                    "workspace_dir": {
-                        "type": "string",
-                        "description": "Base directory for file operations (for security)"
-                    },
-                    "max_file_size": {
-                        "type": "integer",
-                        "description": "Maximum file size in bytes",
-                        "default": 10485760
-                    },
-                    "allowed_extensions": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Allowed file extensions"
-                    }
+    def register_capability(self) -> list[CapabilityInfo]:
+        """Register the system tools capabilities."""
+        base_config_schema = {
+            "type": "object",
+            "properties": {
+                "workspace_dir": {
+                    "type": "string",
+                    "description": "Base directory for file operations (for security)"
+                },
+                "max_file_size": {
+                    "type": "integer",
+                    "description": "Maximum file size in bytes",
+                    "default": 10485760
+                },
+                "allowed_extensions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Allowed file extensions"
                 }
             }
-        )
+        }
+        
+        return [
+            CapabilityInfo(
+                id="file_read",
+                name="File Read",
+                version="0.2.0",
+                description="Read contents of files",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
+                tags=["files", "read", "io"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="file_write",
+                name="File Write",
+                version="0.2.0",
+                description="Write content to files",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
+                tags=["files", "write", "io"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="file_exists",
+                name="File Exists",
+                version="0.2.0",
+                description="Check if a file or directory exists",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["files", "check"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="file_info",
+                name="File Info",
+                version="0.2.0",
+                description="Get detailed information about a file or directory",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["files", "info"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="list_directory",
+                name="List Directory",
+                version="0.2.0",
+                description="List contents of a directory",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["directories", "list"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="create_directory",
+                name="Create Directory",
+                version="0.2.0",
+                description="Create a new directory",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["directories", "create"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="delete_file",
+                name="Delete File",
+                version="0.2.0",
+                description="Delete a file or directory",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["files", "delete"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="system_info",
+                name="System Info",
+                version="0.2.0",
+                description="Get system and platform information",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["system", "info"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="working_directory",
+                name="Working Directory",
+                version="0.2.0",
+                description="Get the current working directory",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["system", "directory"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="execute_command",
+                name="Execute Command",
+                version="0.2.0",
+                description="Execute a safe shell command",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["system", "command", "execute"],
+                config_schema=base_config_schema
+            ),
+            CapabilityInfo(
+                id="file_hash",
+                name="File Hash",
+                version="0.2.0",
+                description="Compute cryptographic hash(es) for a file",
+                plugin_name="sys_tools",
+                capabilities=[CapabilityType.AI_FUNCTION],
+                tags=["files", "hash", "security"],
+                config_schema=base_config_schema
+            ),
+        ]
 
     @hookimpl
     def validate_config(self, config: dict) -> ValidationResult:
@@ -169,14 +274,30 @@ class Plugin:
         """Execute the capability logic."""
         try:
             # Get the specific capability being invoked
-            # capability_id = context.metadata.get("capability_id", "unknown")
-
-            # For AI function calls, the capability routing is handled by get_ai_functions
-            # For natural language requests, we still need the NL handler for now
-            # TODO: In future, each capability could have its own natural language handler
-
-            user_input = self._extract_user_input(context)
-            return self._handle_natural_language(user_input)
+            capability_id = context.metadata.get("capability_id", "unknown")
+            
+            # Route to specific capability handler based on capability_id
+            capability_map = {
+                "file_read": self._ai_read_file,
+                "file_write": self._ai_write_file,
+                "file_exists": self._ai_file_exists,
+                "file_info": self._ai_get_file_info,
+                "list_directory": self._ai_list_directory,
+                "create_directory": self._ai_create_directory,
+                "delete_file": self._ai_delete_file,
+                "system_info": self._ai_get_system_info,
+                "working_directory": self._ai_get_working_directory,
+                "execute_command": self._ai_execute_command,
+                "file_hash": self._ai_get_file_hash,
+            }
+            
+            if capability_id in capability_map:
+                handler = capability_map[capability_id]
+                return await handler(context.task, context)
+            else:
+                # Fallback to natural language processing for unknown capabilities
+                user_input = self._extract_user_input(context)
+                return self._handle_natural_language(user_input)
 
         except SecurityError as e:
             return CapabilityResult(
@@ -1193,226 +1314,246 @@ class Plugin:
                 error=str(e),
             )
 
-    @hookimpl
-    def get_ai_functions(self) -> list[AIFunction]:
-        """Provide AI-callable functions."""
-        def create_ai_function(name, description, parameters, handler):
-            """Helper to create AIFunction with common metadata."""
-            return AIFunction(
-                name=name,
-                description=description,
-                parameters=parameters,
-                handler=handler,
-            )
-
-        return [
-            # File operations
-            create_ai_function(
-                name="read_file",
-                description="Read the contents of a file",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Path to the file to read",
+    @hookimpl  
+    def get_ai_functions(self, capability_id: str = None) -> list[AIFunction]:
+        """Provide AI-callable functions for a specific capability."""
+        # Map each capability to its specific AI function
+        capability_functions = {
+            "file_read": [
+                AIFunction(
+                    name="read_file",
+                    description="Read the contents of a file",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Path to the file to read",
+                            },
+                            "encoding": {
+                                "type": "string",
+                                "description": "Text encoding (default: utf-8)",
+                                "default": "utf-8",
+                            },
                         },
-                        "encoding": {
-                            "type": "string",
-                            "description": "Text encoding (default: utf-8)",
-                            "default": "utf-8",
+                        "required": ["path"],
+                    },
+                    handler=self._ai_read_file,
+                )
+            ],
+            "file_write": [
+                AIFunction(
+                    name="write_file",
+                    description="Write content to a file",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Path to the file to write",
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Content to write to the file",
+                            },
+                            "encoding": {
+                                "type": "string",
+                                "description": "Text encoding (default: utf-8)",
+                                "default": "utf-8",
+                            },
+                            "create_parents": {
+                                "type": "boolean",
+                                "description": "Create parent directories if needed",
+                                "default": True,
+                            },
+                        },
+                        "required": ["path", "content"],
+                    },
+                    handler=self._ai_write_file,
+                )
+            ],
+            "file_exists": [
+                AIFunction(
+                    name="file_exists",
+                    description="Check if a file or directory exists",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string", "description": "Path to check"}
+                        },
+                        "required": ["path"],
+                    },
+                    handler=self._ai_file_exists,
+                )
+            ],
+            "file_info": [
+                AIFunction(
+                    name="get_file_info",
+                    description="Get detailed information about a file or directory",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Path to the file or directory",
+                            }
+                        },
+                        "required": ["path"],
+                    },
+                    handler=self._ai_get_file_info,
+                )
+            ],
+            "list_directory": [
+                AIFunction(
+                    name="list_directory",
+                    description="List contents of a directory",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Directory path (default: current directory)",
+                                "default": ".",
+                            },
+                            "pattern": {
+                                "type": "string",
+                                "description": "Glob pattern to filter results (e.g., '*.txt')",
+                            },
+                            "recursive": {
+                                "type": "boolean",
+                                "description": "List recursively",
+                                "default": False,
+                            },
                         },
                     },
-                    "required": ["path"],
-                },
-                handler=self._ai_read_file,
-            ),
-            AIFunction(
-                name="write_file",
-                description="Write content to a file",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Path to the file to write",
+                    handler=self._ai_list_directory,
+                )
+            ],
+            "create_directory": [
+                AIFunction(
+                    name="create_directory",
+                    description="Create a new directory",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Path of directory to create",
+                            },
+                            "parents": {
+                                "type": "boolean",
+                                "description": "Create parent directories if needed",
+                                "default": True,
+                            },
+                            "exist_ok": {
+                                "type": "boolean",
+                                "description": "Don't raise error if directory exists",
+                                "default": True,
+                            },
                         },
-                        "content": {
-                            "type": "string",
-                            "description": "Content to write to the file",
-                        },
-                        "encoding": {
-                            "type": "string",
-                            "description": "Text encoding (default: utf-8)",
-                            "default": "utf-8",
-                        },
-                        "create_parents": {
-                            "type": "boolean",
-                            "description": "Create parent directories if needed",
-                            "default": True,
-                        },
+                        "required": ["path"],
                     },
-                    "required": ["path", "content"],
-                },
-                handler=self._ai_write_file,
-            ),
-            AIFunction(
-                name="file_exists",
-                description="Check if a file or directory exists",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {"type": "string", "description": "Path to check"}
+                    handler=self._ai_create_directory,
+                )
+            ],
+            "delete_file": [
+                AIFunction(
+                    name="delete_file",
+                    description="Delete a file or directory",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string", "description": "Path to delete"},
+                            "recursive": {
+                                "type": "boolean",
+                                "description": "Delete directories recursively",
+                                "default": False,
+                            },
+                        },
+                        "required": ["path"],
                     },
-                    "required": ["path"],
-                },
-                handler=self._ai_file_exists,
-            ),
-            AIFunction(
-                name="get_file_info",
-                description="Get detailed information about a file or directory",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Path to the file or directory",
-                        }
+                    handler=self._ai_delete_file,
+                )
+            ],
+            "system_info": [
+                AIFunction(
+                    name="get_system_info",
+                    description="Get system and platform information",
+                    parameters={"type": "object", "properties": {}},
+                    handler=self._ai_get_system_info,
+                )
+            ],
+            "working_directory": [
+                AIFunction(
+                    name="get_working_directory",
+                    description="Get the current working directory",
+                    parameters={"type": "object", "properties": {}},
+                    handler=self._ai_get_working_directory,
+                )
+            ],
+            "execute_command": [
+                AIFunction(
+                    name="execute_command",
+                    description="Execute a safe shell command (limited to whitelist)",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "Command to execute",
+                            },
+                            "timeout": {
+                                "type": "integer",
+                                "description": "Timeout in seconds",
+                                "default": 30,
+                            },
+                        },
+                        "required": ["command"],
                     },
-                    "required": ["path"],
-                },
-                handler=self._ai_get_file_info,
-            ),
-            # Directory operations
-            AIFunction(
-                name="list_directory",
-                description="List contents of a directory",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Directory path (default: current directory)",
-                            "default": ".",
+                    handler=self._ai_execute_command,
+                )
+            ],
+            "file_hash": [
+                AIFunction(
+                    name="get_file_hash",
+                    description="Compute cryptographic hash(es) for a file (SHA256, SHA512, SHA1, MD5)",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Path to the file to hash",
+                            },
+                            "algorithms": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "List of hash algorithms to use (default: ['sha256']). Options: md5, sha1, sha256, sha512",
+                            },
+                            "output_format": {
+                                "type": "string",
+                                "description": "Output format for hashes (default: 'hex')",
+                                "enum": ["hex", "base64"],
+                                "default": "hex",
+                            },
+                            "include_file_info": {
+                                "type": "boolean",
+                                "description": "Include file information in the response (default: true)",
+                                "default": True,
+                            },
                         },
-                        "pattern": {
-                            "type": "string",
-                            "description": "Glob pattern to filter results (e.g., '*.txt')",
-                        },
-                        "recursive": {
-                            "type": "boolean",
-                            "description": "List recursively",
-                            "default": False,
-                        },
+                        "required": ["path"],
                     },
-                },
-                handler=self._ai_list_directory,
-            ),
-            AIFunction(
-                name="create_directory",
-                description="Create a new directory",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Path of directory to create",
-                        },
-                        "parents": {
-                            "type": "boolean",
-                            "description": "Create parent directories if needed",
-                            "default": True,
-                        },
-                        "exist_ok": {
-                            "type": "boolean",
-                            "description": "Don't raise error if directory exists",
-                            "default": True,
-                        },
-                    },
-                    "required": ["path"],
-                },
-                handler=self._ai_create_directory,
-            ),
-            AIFunction(
-                name="delete_file",
-                description="Delete a file or directory",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {"type": "string", "description": "Path to delete"},
-                        "recursive": {
-                            "type": "boolean",
-                            "description": "Delete directories recursively",
-                            "default": False,
-                        },
-                    },
-                    "required": ["path"],
-                },
-                handler=self._ai_delete_file,
-            ),
-            # System operations
-            AIFunction(
-                name="get_system_info",
-                description="Get system and platform information",
-                parameters={"type": "object", "properties": {}},
-                handler=self._ai_get_system_info,
-            ),
-            AIFunction(
-                name="get_working_directory",
-                description="Get the current working directory",
-                parameters={"type": "object", "properties": {}},
-                handler=self._ai_get_working_directory,
-            ),
-            AIFunction(
-                name="execute_command",
-                description="Execute a safe shell command (limited to whitelist)",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "command": {
-                            "type": "string",
-                            "description": "Command to execute",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "description": "Timeout in seconds",
-                            "default": 30,
-                        },
-                    },
-                    "required": ["command"],
-                },
-                handler=self._ai_execute_command,
-            ),
-            # File hashing
-            AIFunction(
-                name="get_file_hash",
-                description="Compute cryptographic hash(es) for a file (SHA256, SHA512, SHA1, MD5)",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Path to the file to hash",
-                        },
-                        "algorithms": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "List of hash algorithms to use (default: ['sha256']). Options: md5, sha1, sha256, sha512",
-                        },
-                        "output_format": {
-                            "type": "string",
-                            "description": "Output format for hashes (default: 'hex')",
-                            "enum": ["hex", "base64"],
-                            "default": "hex",
-                        },
-                        "include_file_info": {
-                            "type": "boolean",
-                            "description": "Include file information in the response (default: true)",
-                            "default": True,
-                        },
-                    },
-                    "required": ["path"],
-                },
-                handler=self._ai_get_file_hash,
-            ),
-        ]
+                    handler=self._ai_get_file_hash,
+                )
+            ],
+        }
+        
+        # Return the specific function(s) for this capability
+        if capability_id and capability_id in capability_functions:
+            return capability_functions[capability_id]
+        
+        # Fallback: return all functions (for backward compatibility)
+        all_functions = []
+        for functions in capability_functions.values():
+            all_functions.extend(functions)
+        return all_functions

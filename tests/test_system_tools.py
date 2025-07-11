@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-from agent.plugins import SkillCapability, SkillContext, SkillInfo, ValidationResult
+from agent.plugins import CapabilityType, CapabilityContext, CapabilityInfo, ValidationResult
 
 from sys_tools.plugin import Plugin
 
@@ -16,15 +16,15 @@ class TestPluginRegistration:
     def test_plugin_registration(self):
         """Test that the plugin registers correctly."""
         plugin = Plugin()
-        skill_info = plugin.register_skill()
+        plugin_info = plugin.register_capability()
 
-        assert isinstance(skill_info, SkillInfo)
-        assert skill_info.id == "sys_tools"
-        assert skill_info.name == "System Tools"
-        assert skill_info.version == "0.1.0"
-        assert SkillCapability.TEXT in skill_info.capabilities
-        assert SkillCapability.AI_FUNCTION in skill_info.capabilities
-        assert "system-tools" in skill_info.tags
+        assert isinstance(plugin_info, CapabilityInfo)
+        assert plugin_info.id == "sys_tools"
+        assert plugin_info.name == "System Tools"
+        assert plugin_info.version == "0.2.0"
+        assert CapabilityType.TEXT in plugin_info.capabilities
+        assert CapabilityType.AI_FUNCTION in plugin_info.capabilities
+        assert "system-tools" in plugin_info.tags
 
     def test_config_validation_valid(self):
         """Test configuration validation with valid config."""
@@ -62,7 +62,7 @@ class TestPluginRegistration:
         def create_context(text):
             task = Mock()
             task.history = [Mock(parts=[Mock(text=text)])]
-            return SkillContext(task=task)
+            return CapabilityContext(task=task)
 
         # High confidence tasks
         assert plugin.can_handle_task(create_context("read file test.txt")) == 1.0
@@ -488,12 +488,12 @@ class TestAIFunctions:
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
         # Create proper context with task metadata (AgentUp's parameter passing)
-        from sys_tools.plugin import SkillContext
+        from sys_tools.plugin import CapabilityContext
 
         task = Mock()
         task.metadata = {"path": "func_test.txt"}
 
-        context = SkillContext(task=task, metadata={"parameters": {}})
+        context = CapabilityContext(task=task, metadata={"parameters": {}})
 
         # Test the AI function wrapper directly
         result = await plugin._ai_read_file(task, context)
@@ -685,11 +685,11 @@ class TestFileHashing:
         assert "output_format" in hash_func.parameters["properties"]
 
         # Test AI function execution
-        from sys_tools.plugin import SkillContext
+        from sys_tools.plugin import CapabilityContext
 
         task = Mock()
         task.metadata = {"path": "ai_test.txt", "algorithms": ["sha256", "md5"]}
-        context = SkillContext(task=task, metadata={"parameters": {}})
+        context = CapabilityContext(task=task, metadata={"parameters": {}})
 
         result = await plugin._ai_get_file_hash(task, context)
 
