@@ -8,10 +8,10 @@ from typing import Any
 import pluggy
 from agent.plugins import (
     AIFunction,
-    SkillCapability,
-    SkillContext,
-    SkillInfo,
-    SkillResult,
+    CapabilityType,
+    CapabilityContext,
+    CapabilityInfo,
+    CapabilityResult,
     ValidationResult,
 )
 
@@ -41,39 +41,39 @@ class Plugin:
         self.hasher = FileHasher(self.security)
 
     @hookimpl
-    def register_skill(self) -> SkillInfo:
-        """Register the skill with AgentUp."""
-        return SkillInfo(
+    def register_capability(self) -> CapabilityInfo:
+        """Register the system tools capability."""
+        return CapabilityInfo(
             id="sys_tools",
             name="System Tools",
-            version="0.1.0",
-            description="A plugin that provides System Tools functionality for reading, writing, executing files, working with folders",
-            capabilities=[SkillCapability.TEXT, SkillCapability.AI_FUNCTION],
-            tags=["system-tools", "file-io", "system"],
+            version="0.2.0",
+            description="Provides safe, controlled access to system operations including file I/O, directory management, and system information retrieval",
+            capabilities=[CapabilityType.AI_FUNCTION],
+            tags=["system", "files", "directories", "security"],
             config_schema={
                 "type": "object",
                 "properties": {
                     "workspace_dir": {
                         "type": "string",
-                        "description": "Directory to restrict operations to",
+                        "description": "Base directory for file operations (for security)"
                     },
                     "max_file_size": {
                         "type": "integer",
-                        "description": "Maximum file size in bytes (default 10MB)",
-                        "default": 10485760,
+                        "description": "Maximum file size in bytes",
+                        "default": 10485760
                     },
-                    "allow_command_execution": {
-                        "type": "boolean",
-                        "description": "Allow safe command execution",
-                        "default": True,
-                    },
-                },
-            },
+                    "allowed_extensions": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Allowed file extensions"
+                    }
+                }
+            }
         )
 
     @hookimpl
     def validate_config(self, config: dict) -> ValidationResult:
-        """Validate skill configuration."""
+        """Validate capability configuration."""
         errors = []
         warnings = []
 
@@ -98,8 +98,8 @@ class Plugin:
         )
 
     @hookimpl
-    def can_handle_task(self, context: SkillContext) -> float:
-        """Check if this skill can handle the task."""
+    def can_handle_task(self, context: CapabilityContext) -> float:
+        """Check if this capability can handle the task."""
         user_input = self._extract_user_input(context).lower()
 
         # Keywords and their confidence scores
@@ -165,29 +165,35 @@ class Plugin:
         return confidence
 
     @hookimpl
-    async def execute_skill(self, context: SkillContext) -> SkillResult:
-        """Execute the skill logic."""
+    async def execute_capability(self, context: CapabilityContext) -> CapabilityResult:
+        """Execute the capability logic."""
         try:
-            # For natural language requests (not AI function calls)
+            # Get the specific capability being invoked
+            # capability_id = context.metadata.get("capability_id", "unknown")
+
+            # For AI function calls, the capability routing is handled by get_ai_functions
+            # For natural language requests, we still need the NL handler for now
+            # TODO: In future, each capability could have its own natural language handler
+
             user_input = self._extract_user_input(context)
             return self._handle_natural_language(user_input)
 
         except SecurityError as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=f"Security error: {str(e)}",
                 success=False,
                 error=str(e),
-                metadata={"skill": "sys_tools", "error_type": "security"},
+                metadata={"capability": context.metadata.get("capability_id", "unknown"), "error_type": "security"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=f"Error executing system tools: {str(e)}",
                 success=False,
                 error=str(e),
-                metadata={"skill": "sys_tools", "error_type": type(e).__name__},
+                metadata={"capability": context.metadata.get("capability_id", "unknown"), "error_type": type(e).__name__},
             )
 
-    def _extract_user_input(self, context: SkillContext) -> str:
+    def _extract_user_input(self, context: CapabilityContext) -> str:
         """Extract user input from the task context."""
         if hasattr(context.task, "history") and context.task.history:
             last_msg = context.task.history[-1]
@@ -197,7 +203,7 @@ class Plugin:
                 )
         return ""
 
-    def _handle_natural_language(self, user_input: str) -> SkillResult:
+    def _handle_natural_language(self, user_input: str) -> CapabilityResult:
         """Handle natural language requests."""
         # Try to provide helpful guidance
         suggestions = [
@@ -214,10 +220,10 @@ class Plugin:
             "For best results, use the AI function interface.",
         ]
 
-        return SkillResult(
+        return CapabilityResult(
             content="\n".join(suggestions),
             success=True,
-            metadata={"skill": "sys_tools", "type": "help"},
+            metadata={"capability": "sys_tools", "type": "help"},
         )
 
     # File Operations
@@ -941,7 +947,7 @@ class Plugin:
             return json.dumps(error_result, indent=2)
 
     # AI Function Wrappers (AgentUp expects these to follow (task, context) signature)
-    async def _ai_read_file(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_read_file(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for read_file."""
         # Get parameters from task metadata (AgentUp's parameter passing mechanism)
         params = context.metadata.get("parameters", {})
@@ -952,19 +958,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._internal_read_file(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "read_file"},
+                metadata={"capability": "sys_tools", "function": "read_file"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "read_file")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_write_file(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_write_file(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for write_file."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -974,19 +980,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._write_file_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "write_file"},
+                metadata={"capability": "sys_tools", "function": "write_file"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "write_file")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_file_exists(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_file_exists(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for file_exists."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -997,19 +1003,19 @@ class Plugin:
         try:
             # Call the internal method directly, not the string-returning direct method
             result = await self._file_exists_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "file_exists"},
+                metadata={"capability": "sys_tools", "function": "file_exists"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "file_exists")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_get_file_info(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_get_file_info(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for get_file_info."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1019,19 +1025,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._get_file_info_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "get_file_info"},
+                metadata={"capability": "sys_tools", "function": "get_file_info"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "get_file_info")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_list_directory(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_list_directory(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for list_directory."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1041,19 +1047,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._list_directory_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "list_directory"},
+                metadata={"capability": "sys_tools", "function": "list_directory"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "list_directory")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_create_directory(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_create_directory(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for create_directory."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1063,19 +1069,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._create_directory_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "create_directory"},
+                metadata={"capability": "sys_tools", "function": "create_directory"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "create_directory")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_delete_file(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_delete_file(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for delete_file."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1085,19 +1091,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._delete_file_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "delete_file"},
+                metadata={"capability": "sys_tools", "function": "delete_file"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "delete_file")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_get_system_info(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_get_system_info(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for get_system_info."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1107,21 +1113,21 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._get_system_info_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "get_system_info"},
+                metadata={"capability": "sys_tools", "function": "get_system_info"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "get_system_info")),
                 success=False,
                 error=str(e),
             )
 
     async def _ai_get_working_directory(
-        self, task, context: SkillContext
-    ) -> SkillResult:
+        self, task, context: CapabilityContext
+    ) -> CapabilityResult:
         """AI function wrapper for get_working_directory."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1131,19 +1137,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._get_working_directory_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "get_working_directory"},
+                metadata={"capability": "sys_tools", "function": "get_working_directory"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "get_working_directory")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_execute_command(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_execute_command(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for execute_command."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1153,19 +1159,19 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._execute_command_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "execute_command"},
+                metadata={"capability": "sys_tools", "function": "execute_command"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "execute_command")),
                 success=False,
                 error=str(e),
             )
 
-    async def _ai_get_file_hash(self, task, context: SkillContext) -> SkillResult:
+    async def _ai_get_file_hash(self, task, context: CapabilityContext) -> CapabilityResult:
         """AI function wrapper for get_file_hash."""
         params = context.metadata.get("parameters", {})
         task_metadata = (
@@ -1175,13 +1181,13 @@ class Plugin:
             params = task_metadata
         try:
             result = await self._get_file_hash_internal(**params)
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(result, indent=2),
                 success=result.get("success", True),
-                metadata={"skill": "sys_tools", "function": "get_file_hash"},
+                metadata={"capability": "sys_tools", "function": "get_file_hash"},
             )
         except Exception as e:
-            return SkillResult(
+            return CapabilityResult(
                 content=json.dumps(create_error_response(e, "get_file_hash")),
                 success=False,
                 error=str(e),
@@ -1190,9 +1196,18 @@ class Plugin:
     @hookimpl
     def get_ai_functions(self) -> list[AIFunction]:
         """Provide AI-callable functions."""
+        def create_ai_function(name, description, parameters, handler):
+            """Helper to create AIFunction with common metadata."""
+            return AIFunction(
+                name=name,
+                description=description,
+                parameters=parameters,
+                handler=handler,
+            )
+
         return [
             # File operations
-            AIFunction(
+            create_ai_function(
                 name="read_file",
                 description="Read the contents of a file",
                 parameters={

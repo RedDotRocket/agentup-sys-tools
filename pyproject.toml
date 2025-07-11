@@ -8,6 +8,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "agentup>=0.1.0",
+    "build>=1.2.2.post1",
     "pluggy>=1.5.0",
 ]
 classifiers = [
@@ -30,7 +31,7 @@ dev = [
     "mypy>=1.0.0",
 ]
 
-[project.entry-points."agentup.skills"]
+[project.entry-points."agentup.capabilities"]
 sys_tools = "sys_tools.plugin:Plugin"
 
 [build-system]
