@@ -1,6 +1,6 @@
 [project]
-name = "agentup-sys-tools"
-version = "0.2.0"
+name = "sys-tools"
+version = "0.2.1"
 description = "A plugin that provides System Tools for AgentUp"
 authors = [
     { name = "Luke Hinds (Red Dot Rocket)", email = "luke@rdrocket.com" }
@@ -40,6 +40,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sys_tools"]
+
+# Include static files in the wheel
+[tool.hatch.build.targets.wheel.force-include]
+"static" = "static"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
