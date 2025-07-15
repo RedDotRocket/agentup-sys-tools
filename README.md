@@ -43,7 +43,7 @@ cd system-tools
 pip install -e .
 ```
 
-### From PyPI (when published)
+### From AgentUp Registry or PyPi (when published)
 ```bash
 pip install agentup-system-tools
 ```

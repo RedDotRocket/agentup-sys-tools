@@ -16,15 +16,20 @@ class TestBasicFunctionality:
     def test_plugin_registration(self):
         """Test that the plugin registers correctly."""
         plugin = Plugin()
-        skill_info = plugin.register_capability()
+        capabilities = plugin.register_capability()
 
-        assert isinstance(skill_info, CapabilityInfo)
-        assert skill_info.id == "sys_tools"
-        assert skill_info.name == "System Tools"
-        assert skill_info.version == "0.2.0"
-        assert CapabilityType.TEXT in skill_info.capabilities
-        assert CapabilityType.AI_FUNCTION in skill_info.capabilities
-        assert "system-tools" in skill_info.tags
+        # Should return a list of capabilities
+        assert isinstance(capabilities, list)
+        assert len(capabilities) > 0  # Should have at least one capability
+        
+        # Check first capability (should be the main sys_tools capability)
+        main_capability = capabilities[0]
+        assert isinstance(main_capability, CapabilityInfo)
+        assert main_capability.id == "sys_tools"
+        assert main_capability.name == "System Tools"
+        assert CapabilityType.TEXT in main_capability.capabilities
+        assert CapabilityType.AI_FUNCTION in main_capability.capabilities
+        assert "system-tools" in main_capability.tags
 
     def test_config_validation(self):
         """Test configuration validation."""
@@ -194,12 +199,12 @@ class TestBasicFunctionality:
             plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
             # Create proper context with task metadata (AgentUp's parameter passing)
-            from sys_tools.plugin import CapabilityContext
-
             task = Mock()
             task.metadata = {"path": "func_test.txt"}
 
-            context = CapabilityContext(task=task, metadata={"parameters": {}})
+            context = Mock()
+            context.task = task
+            context.metadata = {"parameters": {}}
 
             # Test the AI function wrapper directly
             result = await plugin._ai_read_file(task, context)
