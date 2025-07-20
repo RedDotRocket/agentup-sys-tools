@@ -56,15 +56,15 @@ class TestBasicFunctionality:
         # Check function names
         function_names = [f.name for f in functions]
         expected_functions = [
-            "read_file",
-            "write_file",
+            "file_read",
+            "file_write",
             "file_exists",
-            "get_file_info",
+            "file_info",
             "list_directory",
             "create_directory",
             "delete_file",
-            "get_system_info",
-            "get_working_directory",
+            "system_info",
+            "working_directory",
             "execute_command",
         ]
 
@@ -76,13 +76,13 @@ class TestBasicFunctionality:
         plugin = Plugin()
 
         # Test system info
-        result = await plugin._get_system_info_internal()
+        result = await plugin._system_info_internal()
         assert result["success"]
         assert "platform" in result["data"]
         assert "python_version" in result["data"]
 
         # Test working directory
-        result = await plugin._get_working_directory_internal()
+        result = await plugin._working_directory_internal()
         assert result["success"]
         assert "path" in result["data"]
 
@@ -111,7 +111,7 @@ class TestBasicFunctionality:
             plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
             # Test write file
-            result = await plugin._write_file_internal("test.txt", "Hello, World!")
+            result = await plugin._file_write_internal("test.txt", "Hello, World!")
             assert result["success"]
             assert not result["data"]["overwritten"]
 
@@ -121,7 +121,7 @@ class TestBasicFunctionality:
             assert test_file.read_text() == "Hello, World!"
 
             # Test read file
-            result = await plugin._internal_read_file("test.txt")
+            result = await plugin._internal_file_read("test.txt")
             assert result["success"]
             assert result["data"]["content"] == "Hello, World!"
 
@@ -132,7 +132,7 @@ class TestBasicFunctionality:
             assert result["data"]["is_file"]
 
             # Test get file info
-            result = await plugin._get_file_info_internal("test.txt")
+            result = await plugin._file_info_internal("test.txt")
             assert result["success"]
             assert result["data"]["name"] == "test.txt"
             assert result["data"]["size"] == len("Hello, World!")
@@ -164,7 +164,7 @@ class TestBasicFunctionality:
         plugin = Plugin()
 
         # Test path traversal prevention
-        result = await plugin._internal_read_file("../../../etc/passwd")
+        result = await plugin._internal_file_read("../../../etc/passwd")
         assert not result["success"]
         assert "dangerous" in result["error"].lower()
 
@@ -207,7 +207,7 @@ class TestBasicFunctionality:
             context.metadata = {"parameters": {}}
 
             # Test the AI function wrapper directly
-            result = await plugin._ai_read_file(task, context)
+            result = await plugin._ai_file_read(task, context)
             assert result.success
 
             data = json.loads(result.content)

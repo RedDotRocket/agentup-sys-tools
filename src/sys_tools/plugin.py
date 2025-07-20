@@ -31,7 +31,7 @@ from .utils import (
 hookimpl = pluggy.HookimplMarker("agentup")
 
 
-# Capability configuration data
+# Capability configuration data with required scopes for each capability
 CAPABILITIES_CONFIG = [
     {
         "id": "file_read",
@@ -39,8 +39,9 @@ CAPABILITIES_CONFIG = [
         "description": "Read contents of files",
         "capabilities": [CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
         "tags": ["files", "read", "io"],
+        "required_scopes": ["files:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
-            "name": "read_file",
+            "name": "file_read",
             "description": "Read the contents of a file",
             "parameters": {
                 "type": "object",
@@ -58,8 +59,9 @@ CAPABILITIES_CONFIG = [
         "description": "Write content to files",
         "capabilities": [CapabilityType.AI_FUNCTION, CapabilityType.TEXT],
         "tags": ["files", "write", "io"],
+        "required_scopes": ["files:write"],  # Plugin DECLARES scope requirement
         "ai_function": {
-            "name": "write_file",
+            "name": "file_write",
             "description": "Write content to a file",
             "parameters": {
                 "type": "object",
@@ -79,6 +81,7 @@ CAPABILITIES_CONFIG = [
         "description": "Check if a file or directory exists",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["files", "check"],
+        "required_scopes": ["files:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
             "name": "file_exists",
             "description": "Check if a file or directory exists",
@@ -95,8 +98,9 @@ CAPABILITIES_CONFIG = [
         "description": "Get detailed information about a file or directory",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["files", "info"],
+        "required_scopes": ["files:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
-            "name": "get_file_info",
+            "name": "file_info",
             "description": "Get detailed information about a file or directory",
             "parameters": {
                 "type": "object",
@@ -111,6 +115,7 @@ CAPABILITIES_CONFIG = [
         "description": "List contents of a directory",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["directories", "list"],
+        "required_scopes": ["files:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
             "name": "list_directory",
             "description": "List contents of a directory",
@@ -130,6 +135,7 @@ CAPABILITIES_CONFIG = [
         "description": "Create a new directory",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["directories", "create"],
+        "required_scopes": ["files:write"],  # Plugin DECLARES scope requirement
         "ai_function": {
             "name": "create_directory",
             "description": "Create a new directory",
@@ -150,6 +156,7 @@ CAPABILITIES_CONFIG = [
         "description": "Delete a file or directory",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["files", "delete"],
+        "required_scopes": ["files:admin"],  # Plugin DECLARES scope requirement
         "ai_function": {
             "name": "delete_file",
             "description": "Delete a file or directory",
@@ -169,8 +176,9 @@ CAPABILITIES_CONFIG = [
         "description": "Get system and platform information",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["system", "info"],
+        "required_scopes": ["system:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
-            "name": "get_system_info",
+            "name": "system_info",
             "description": "Get system and platform information",
             "parameters": {"type": "object", "properties": {}},
         },
@@ -181,8 +189,9 @@ CAPABILITIES_CONFIG = [
         "description": "Get the current working directory",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["system", "directory"],
+        "required_scopes": ["system:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
-            "name": "get_working_directory",
+            "name": "working_directory",
             "description": "Get the current working directory",
             "parameters": {"type": "object", "properties": {}},
         },
@@ -193,6 +202,7 @@ CAPABILITIES_CONFIG = [
         "description": "Execute a safe shell command",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["system", "command", "execute"],
+        "required_scopes": ["system:admin"],  # Plugin DECLARES scope requirement
         "ai_function": {
             "name": "execute_command",
             "description": "Execute a safe shell command (limited to whitelist)",
@@ -212,8 +222,9 @@ CAPABILITIES_CONFIG = [
         "description": "Compute cryptographic hash(es) for a file",
         "capabilities": [CapabilityType.AI_FUNCTION],
         "tags": ["files", "hash", "security"],
+        "required_scopes": ["files:read"],  # Plugin DECLARES scope requirement
         "ai_function": {
-            "name": "get_file_hash",
+            "name": "file_hash",
             "description": "Compute cryptographic hash(es) for a file",
             "parameters": {
                 "type": "object",
@@ -252,17 +263,17 @@ class Plugin:
         """Create a generic AI wrapper function for a capability."""
         # Map function names to their internal implementation methods
         internal_methods = {
-            "read_file": self._internal_read_file,
-            "write_file": self._write_file_internal,
+            "file_read": self._internal_file_read,
+            "file_write": self._file_write_internal,
             "file_exists": self._file_exists_internal,
-            "get_file_info": self._get_file_info_internal,
+            "file_info": self._file_info_internal,
             "list_directory": self._list_directory_internal,
             "create_directory": self._create_directory_internal,
             "delete_file": self._delete_file_internal,
-            "get_system_info": self._get_system_info_internal,
-            "get_working_directory": self._get_working_directory_internal,
+            "system_info": self._system_info_internal,
+            "working_directory": self._working_directory_internal,
             "execute_command": self._execute_command_internal,
-            "get_file_hash": self._get_file_hash_internal,
+            "file_hash": self._file_hash_internal,
         }
 
         async def ai_wrapper(task, context: CapabilityContext) -> CapabilityResult:
@@ -325,7 +336,8 @@ class Plugin:
             plugin_name="sys_tools",
             capabilities=config["capabilities"],
             tags=config["tags"],
-            config_schema=self._create_base_config_schema()
+            config_schema=self._create_base_config_schema(),
+            required_scopes=config.get("required_scopes", [])  # Plugin DECLARES scope requirement
         )
 
     @hookimpl
@@ -491,7 +503,7 @@ class Plugin:
         )
 
     # File Operations
-    async def _internal_read_file(
+    async def _internal_file_read(
         self, path: str, encoding: str = "utf-8"
     ) -> dict[str, Any]:
         """Read contents of a file."""
@@ -501,12 +513,12 @@ class Plugin:
 
             if not file_path.exists():
                 return create_error_response(
-                    FileNotFoundError(f"File not found: {path}"), "read_file"
+                    FileNotFoundError(f"File not found: {path}"), "file_read"
                 )
 
             if not file_path.is_file():
                 return create_error_response(
-                    ValueError(f"Path is not a file: {path}"), "read_file"
+                    ValueError(f"Path is not a file: {path}"), "file_read"
                 )
 
             content = safe_read_text(file_path, encoding, self.security.max_file_size)
@@ -518,14 +530,14 @@ class Plugin:
                     "encoding": encoding,
                     "size": len(content),
                 },
-                "read_file",
+                "file_read",
                 f"Successfully read {format_file_size(len(content.encode()))}",
             )
 
         except Exception as e:
-            return create_error_response(e, "read_file")
+            return create_error_response(e, "file_read")
 
-    async def _write_file(
+    async def _file_write(
         self,
         path: str,
         content: str,
@@ -549,12 +561,12 @@ class Plugin:
                     "encoding": encoding,
                     "overwritten": exists,
                 },
-                "write_file",
+                "file_write",
                 f"Successfully {'updated' if exists else 'created'} file",
             )
 
         except Exception as e:
-            return create_error_response(e, "write_file")
+            return create_error_response(e, "file_write")
 
     async def _file_exists(self, path: str) -> dict[str, Any]:
         """Check if a file exists."""
@@ -575,14 +587,14 @@ class Plugin:
         except Exception as e:
             return create_error_response(e, "file_exists")
 
-    async def _get_file_info(self, path: str) -> dict[str, Any]:
+    async def _file_info(self, path: str) -> dict[str, Any]:
         """Get detailed information about a file."""
         try:
             file_path = self.security.validate_path(path)
 
             if not file_path.exists():
                 return create_error_response(
-                    FileNotFoundError(f"Path not found: {path}"), "get_file_info"
+                    FileNotFoundError(f"Path not found: {path}"), "file_info"
                 )
 
             stat = file_path.stat()
@@ -605,10 +617,10 @@ class Plugin:
             if file_path.is_symlink():
                 info["symlink_target"] = str(file_path.readlink())
 
-            return create_success_response(info, "get_file_info")
+            return create_success_response(info, "file_info")
 
         except Exception as e:
-            return create_error_response(e, "get_file_info")
+            return create_error_response(e, "file_info")
 
     # Directory Operations
     async def _list_directory(
@@ -713,7 +725,7 @@ class Plugin:
             return create_error_response(e, "delete_file")
 
     # System Operations
-    async def _get_system_info(self) -> dict[str, Any]:
+    async def _system_info(self) -> dict[str, Any]:
         """Get system information."""
         try:
             info = {
@@ -733,20 +745,20 @@ class Plugin:
             else:
                 info["user"] = os.environ.get("USERNAME", "unknown")
 
-            return create_success_response(info, "get_system_info")
+            return create_success_response(info, "system_info")
 
         except Exception as e:
-            return create_error_response(e, "get_system_info")
+            return create_error_response(e, "system_info")
 
-    async def _get_working_directory(self) -> dict[str, Any]:
+    async def _working_directory(self) -> dict[str, Any]:
         """Get current working directory."""
         try:
             cwd = os.getcwd()
             return create_success_response(
-                {"path": cwd, "absolute": os.path.abspath(cwd)}, "get_working_directory"
+                {"path": cwd, "absolute": os.path.abspath(cwd)}, "working_directory"
             )
         except Exception as e:
-            return create_error_response(e, "get_working_directory")
+            return create_error_response(e, "working_directory")
 
     async def _execute_command(self, command: str, timeout: int = 30) -> dict[str, Any]:
         """Execute a safe shell command."""
@@ -783,14 +795,14 @@ class Plugin:
         except Exception as e:
             return create_error_response(e, "execute_command")
 
-    async def _get_file_hash_internal(
+    async def _file_hash_internal(
         self,
         path: str,
         algorithms: list[str] | None = None,
         output_format: str = "hex",
         include_file_info: bool = True,
     ) -> dict[str, Any]:
-        """Internal get_file_hash implementation."""
+        """Internal file_hash implementation."""
         try:
             # Initialize hasher if not already done
             if not hasattr(self, "hasher"):
@@ -802,24 +814,24 @@ class Plugin:
             )
             return result
         except Exception as e:
-            return create_error_response(e, "get_file_hash")
+            return create_error_response(e, "file_hash")
 
     # Direct method interfaces (called by AgentUp's function dispatcher)
     # These methods return JSON strings and handle direct function calls
-    async def _read_file(self, path: str, encoding: str = "utf-8", **kwargs) -> str:
-        """Direct method interface for read_file function calls."""
+    async def _file_read(self, path: str, encoding: str = "utf-8", **kwargs) -> str:
+        """Direct method interface for file_read function calls."""
         try:
-            result = await self._internal_read_file(path, encoding)
+            result = await self._internal_file_read(path, encoding)
             import json
 
             return json.dumps(result, indent=2)
         except Exception as e:
             import json
 
-            error_result = create_error_response(e, "read_file")
+            error_result = create_error_response(e, "file_read")
             return json.dumps(error_result, indent=2)
 
-    async def _write_file(
+    async def _file_write(
         self,
         path: str,
         content: str,
@@ -827,7 +839,7 @@ class Plugin:
         create_parents: bool = True,
         **kwargs,
     ) -> str:
-        """Direct method interface for write_file function calls."""
+        """Direct method interface for file_write function calls."""
         try:
             # Note: This conflicts with the internal method name, need to call differently
             from .utils import safe_write_text
@@ -843,7 +855,7 @@ class Plugin:
                     "encoding": encoding,
                     "overwritten": exists,
                 },
-                "write_file",
+                "file_write",
                 f"Successfully {'updated' if exists else 'created'} file",
             )
             import json
@@ -852,18 +864,18 @@ class Plugin:
         except Exception as e:
             import json
 
-            error_result = create_error_response(e, "write_file")
+            error_result = create_error_response(e, "file_write")
             return json.dumps(error_result, indent=2)
 
     # Internal implementations that return dictionaries (for AI function wrappers)
-    async def _write_file_internal(
+    async def _file_write_internal(
         self,
         path: str,
         content: str,
         encoding: str = "utf-8",
         create_parents: bool = True,
     ) -> dict[str, Any]:
-        """Internal write_file implementation."""
+        """Internal file_write implementation."""
         try:
             file_path = self.security.validate_path(path)
             content = self.security.sanitize_content(content)
@@ -876,11 +888,11 @@ class Plugin:
                     "encoding": encoding,
                     "overwritten": exists,
                 },
-                "write_file",
+                "file_write",
                 f"Successfully {'updated' if exists else 'created'} file",
             )
         except Exception as e:
-            return create_error_response(e, "write_file")
+            return create_error_response(e, "file_write")
 
     async def _file_exists_internal(self, path: str) -> dict[str, Any]:
         """Internal file_exists implementation."""
@@ -899,13 +911,13 @@ class Plugin:
         except Exception as e:
             return create_error_response(e, "file_exists")
 
-    async def _get_file_info_internal(self, path: str) -> dict[str, Any]:
-        """Internal get_file_info implementation."""
+    async def _file_info_internal(self, path: str) -> dict[str, Any]:
+        """Internal file_info implementation."""
         try:
             file_path = self.security.validate_path(path)
             if not file_path.exists():
                 return create_error_response(
-                    FileNotFoundError(f"Path not found: {path}"), "get_file_info"
+                    FileNotFoundError(f"Path not found: {path}"), "file_info"
                 )
             stat = file_path.stat()
             info = {
@@ -924,9 +936,9 @@ class Plugin:
             }
             if file_path.is_symlink():
                 info["symlink_target"] = str(file_path.readlink())
-            return create_success_response(info, "get_file_info")
+            return create_success_response(info, "file_info")
         except Exception as e:
-            return create_error_response(e, "get_file_info")
+            return create_error_response(e, "file_info")
 
     async def _list_directory_internal(
         self, path: str = ".", pattern: str | None = None, recursive: bool = False
@@ -1013,8 +1025,8 @@ class Plugin:
         except Exception as e:
             return create_error_response(e, "delete_file")
 
-    async def _get_system_info_internal(self) -> dict[str, Any]:
-        """Internal get_system_info implementation."""
+    async def _system_info_internal(self) -> dict[str, Any]:
+        """Internal system_info implementation."""
         try:
             info = {
                 "platform": platform.system(),
@@ -1030,19 +1042,19 @@ class Plugin:
                 info["user"] = os.environ.get("USER", "unknown")
             else:
                 info["user"] = os.environ.get("USERNAME", "unknown")
-            return create_success_response(info, "get_system_info")
+            return create_success_response(info, "system_info")
         except Exception as e:
-            return create_error_response(e, "get_system_info")
+            return create_error_response(e, "system_info")
 
-    async def _get_working_directory_internal(self) -> dict[str, Any]:
-        """Internal get_working_directory implementation."""
+    async def _working_directory_internal(self) -> dict[str, Any]:
+        """Internal working_directory implementation."""
         try:
             cwd = os.getcwd()
             return create_success_response(
-                {"path": cwd, "absolute": os.path.abspath(cwd)}, "get_working_directory"
+                {"path": cwd, "absolute": os.path.abspath(cwd)}, "working_directory"
             )
         except Exception as e:
-            return create_error_response(e, "get_working_directory")
+            return create_error_response(e, "working_directory")
 
     async def _execute_command_internal(
         self, command: str, timeout: int = 30
@@ -1089,17 +1101,17 @@ class Plugin:
             error_result = create_error_response(e, "file_exists")
             return json.dumps(error_result, indent=2)
 
-    async def _get_file_info(self, path: str, **kwargs) -> str:
-        """Direct method interface for get_file_info function calls."""
+    async def _file_info(self, path: str, **kwargs) -> str:
+        """Direct method interface for file_info function calls."""
         try:
-            result = await self._get_file_info_internal(path)
+            result = await self._file_info_internal(path)
             import json
 
             return json.dumps(result, indent=2)
         except Exception as e:
             import json
 
-            error_result = create_error_response(e, "get_file_info")
+            error_result = create_error_response(e, "file_info")
             return json.dumps(error_result, indent=2)
 
     async def _list_directory(
@@ -1149,30 +1161,30 @@ class Plugin:
             error_result = create_error_response(e, "delete_file")
             return json.dumps(error_result, indent=2)
 
-    async def _get_system_info(self, **kwargs) -> str:
-        """Direct method interface for get_system_info function calls."""
+    async def _system_info(self, **kwargs) -> str:
+        """Direct method interface for system_info function calls."""
         try:
-            result = await self._get_system_info_internal()
+            result = await self._system_info_internal()
             import json
 
             return json.dumps(result, indent=2)
         except Exception as e:
             import json
 
-            error_result = create_error_response(e, "get_system_info")
+            error_result = create_error_response(e, "system_info")
             return json.dumps(error_result, indent=2)
 
-    async def _get_working_directory(self, **kwargs) -> str:
-        """Direct method interface for get_working_directory function calls."""
+    async def _working_directory(self, **kwargs) -> str:
+        """Direct method interface for working_directory function calls."""
         try:
-            result = await self._get_working_directory_internal()
+            result = await self._working_directory_internal()
             import json
 
             return json.dumps(result, indent=2)
         except Exception as e:
             import json
 
-            error_result = create_error_response(e, "get_working_directory")
+            error_result = create_error_response(e, "working_directory")
             return json.dumps(error_result, indent=2)
 
     async def _execute_command(self, command: str, timeout: int = 30, **kwargs) -> str:
@@ -1188,7 +1200,7 @@ class Plugin:
             error_result = create_error_response(e, "execute_command")
             return json.dumps(error_result, indent=2)
 
-    async def _get_file_hash(
+    async def _file_hash(
         self,
         path: str,
         algorithms: list[str] | None = None,
@@ -1196,9 +1208,9 @@ class Plugin:
         include_file_info: bool = True,
         **kwargs,
     ) -> str:
-        """Direct method interface for get_file_hash function calls."""
+        """Direct method interface for file_hash function calls."""
         try:
-            result = await self._get_file_hash_internal(
+            result = await self._file_hash_internal(
                 path, algorithms, output_format, include_file_info
             )
             import json
@@ -1207,7 +1219,7 @@ class Plugin:
         except Exception as e:
             import json
 
-            error_result = create_error_response(e, "get_file_hash")
+            error_result = create_error_response(e, "file_hash")
             return json.dumps(error_result, indent=2)
 
     def _create_ai_function(self, config: dict) -> AIFunction:

@@ -108,7 +108,7 @@ class TestFileOperations:
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
-    async def test_read_file_success(self, plugin, temp_dir):
+    async def test_file_read_success(self, plugin, temp_dir):
         """Test successful file reading."""
         # Create test file
         test_file = temp_dir / "test.txt"
@@ -120,24 +120,24 @@ class TestFileOperations:
 
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
-        result = await plugin._internal_read_file("test.txt")
+        result = await plugin._internal_file_read("test.txt")
 
         assert result["success"]
         assert result["data"]["content"] == test_content
         assert result["data"]["path"].endswith("test.txt")
 
-    async def test_read_file_not_found(self, plugin, temp_dir):
+    async def test_file_read_not_found(self, plugin, temp_dir):
         """Test reading non-existent file."""
         from sys_tools.security import SecurityManager
 
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
-        result = await plugin._internal_read_file("nonexistent.txt")
+        result = await plugin._internal_file_read("nonexistent.txt")
 
         assert not result["success"]
         assert "not found" in result["error"].lower()
 
-    async def test_write_file_success(self, plugin, temp_dir):
+    async def test_file_write_success(self, plugin, temp_dir):
         """Test successful file writing."""
         test_content = "Test content"
 
@@ -145,7 +145,7 @@ class TestFileOperations:
 
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
-        result = await plugin._write_file_internal("output.txt", test_content)
+        result = await plugin._file_write_internal("output.txt", test_content)
 
         assert result["success"]
         test_file = temp_dir / "output.txt"
@@ -153,7 +153,7 @@ class TestFileOperations:
         assert test_file.read_text() == test_content
         assert not result["data"]["overwritten"]
 
-    async def test_write_file_overwrite(self, plugin, temp_dir):
+    async def test_file_write_overwrite(self, plugin, temp_dir):
         """Test file overwriting."""
         test_file = temp_dir / "existing.txt"
         test_file.write_text("Old content")
@@ -163,7 +163,7 @@ class TestFileOperations:
 
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
-        result = await plugin._write_file_internal("existing.txt", new_content)
+        result = await plugin._file_write_internal("existing.txt", new_content)
 
         assert result["success"]
         assert test_file.read_text() == new_content
@@ -191,7 +191,7 @@ class TestFileOperations:
         assert result["success"]
         assert not result["data"]["exists"]
 
-    async def test_get_file_info(self, plugin, temp_dir):
+    async def test_file_info(self, plugin, temp_dir):
         """Test getting file information."""
         test_file = temp_dir / "info.txt"
         test_content = "File info test"
@@ -201,7 +201,7 @@ class TestFileOperations:
 
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
-        result = await plugin._get_file_info_internal("info.txt")
+        result = await plugin._file_info_internal("info.txt")
 
         assert result["success"]
         data = result["data"]
@@ -355,9 +355,9 @@ class TestSystemOperations:
         """Create plugin instance."""
         return Plugin()
 
-    async def test_get_system_info(self, plugin):
+    async def test_system_info(self, plugin):
         """Test getting system information."""
-        result = await plugin._get_system_info_internal()
+        result = await plugin._system_info_internal()
 
         assert result["success"]
         data = result["data"]
@@ -366,9 +366,9 @@ class TestSystemOperations:
         assert "working_directory" in data
         assert "user" in data
 
-    async def test_get_working_directory(self, plugin):
+    async def test_working_directory(self, plugin):
         """Test getting working directory."""
-        result = await plugin._get_working_directory_internal()
+        result = await plugin._working_directory_internal()
 
         assert result["success"]
         data = result["data"]
@@ -412,7 +412,7 @@ class TestSecurityFeatures:
     async def test_path_traversal_prevention(self, plugin):
         """Test that path traversal is prevented."""
         # Try to access parent directory
-        result = await plugin._internal_read_file("../../../etc/passwd")
+        result = await plugin._internal_file_read("../../../etc/passwd")
 
         assert not result["success"]
         assert "dangerous" in result["error"].lower()
@@ -428,7 +428,7 @@ class TestSecurityFeatures:
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
         # Try to access file outside workspace using relative traversal
-        result = await plugin._internal_read_file("../outside.txt")
+        result = await plugin._internal_file_read("../outside.txt")
 
         assert not result["success"]
         assert "dangerous" in result["error"].lower()
@@ -447,7 +447,7 @@ class TestSecurityFeatures:
 
         plugin.security = SecurityManager(workspace_dir=str(temp_dir))
 
-        result = await plugin._internal_read_file("large.txt")
+        result = await plugin._internal_file_read("large.txt")
 
         assert not result["success"]
         assert "exceeds maximum" in result["error"]
@@ -475,13 +475,13 @@ class TestAIFunctions:
 
         # Check function names
         function_names = [f.name for f in functions]
-        assert "read_file" in function_names
-        assert "write_file" in function_names
+        assert "file_read" in function_names
+        assert "file_write" in function_names
         assert "list_directory" in function_names
-        assert "get_system_info" in function_names
+        assert "system_info" in function_names
 
         # Check a specific function
-        read_func = next(f for f in functions if f.name == "read_file")
+        read_func = next(f for f in functions if f.name == "file_read")
         assert read_func.description
         assert "path" in read_func.parameters["properties"]
         assert "path" in read_func.parameters["required"]
@@ -505,7 +505,7 @@ class TestAIFunctions:
         context.metadata = {"parameters": {}}
 
         # Test the AI function wrapper directly
-        result = await plugin._ai_read_file(task, context)
+        result = await plugin._ai_file_read(task, context)
 
         assert result.success
         data = json.loads(result.content)
@@ -545,7 +545,7 @@ class TestFileHashing:
         self._setup_plugin_security(plugin, temp_dir)
 
         # Test default SHA256
-        result = await plugin._get_file_hash_internal("hash_test.txt")
+        result = await plugin._file_hash_internal("hash_test.txt")
 
         assert result["success"]
         data = result["data"]
@@ -571,7 +571,7 @@ class TestFileHashing:
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal(
+        result = await plugin._file_hash_internal(
             "multi_hash.txt", algorithms=["md5", "sha1", "sha256", "sha512"]
         )
 
@@ -598,7 +598,7 @@ class TestFileHashing:
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal(
+        result = await plugin._file_hash_internal(
             "base64_test.txt", algorithms=["sha256"], output_format="base64"
         )
 
@@ -617,7 +617,7 @@ class TestFileHashing:
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal(
+        result = await plugin._file_hash_internal(
             "no_info.txt", include_file_info=False
         )
 
@@ -631,7 +631,7 @@ class TestFileHashing:
         """Test hashing non-existent file."""
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal("nonexistent.txt")
+        result = await plugin._file_hash_internal("nonexistent.txt")
 
         assert not result["success"]
         assert "not found" in result["error"].lower()
@@ -643,7 +643,7 @@ class TestFileHashing:
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal("subdir")
+        result = await plugin._file_hash_internal("subdir")
 
         assert not result["success"]
         assert "not a file" in result["error"].lower()
@@ -655,7 +655,7 @@ class TestFileHashing:
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal(
+        result = await plugin._file_hash_internal(
             "invalid_algo.txt", algorithms=["invalid_algo"]
         )
 
@@ -671,23 +671,23 @@ class TestFileHashing:
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        result = await plugin._get_file_hash_internal("large.bin")
+        result = await plugin._file_hash_internal("large.bin")
 
         assert result["success"]
         data = result["data"]
         assert "sha256" in data["hashes"]
         assert data["file_info"]["size"] == 1024 * 1024
 
-    async def test_ai_function_get_file_hash(self, plugin, temp_dir):
-        """Test AI function wrapper for get_file_hash."""
+    async def test_ai_function_file_hash(self, plugin, temp_dir):
+        """Test AI function wrapper for file_hash."""
         test_file = temp_dir / "ai_test.txt"
         test_file.write_text("AI function test")
 
         self._setup_plugin_security(plugin, temp_dir)
 
-        # Check that get_file_hash is in AI functions
+        # Check that file_hash is in AI functions
         functions = plugin.get_ai_functions()
-        hash_func = next((f for f in functions if f.name == "get_file_hash"), None)
+        hash_func = next((f for f in functions if f.name == "file_hash"), None)
         assert hash_func is not None
         assert "path" in hash_func.parameters["properties"]
         assert "algorithms" in hash_func.parameters["properties"]
@@ -701,7 +701,7 @@ class TestFileHashing:
         context.task = task
         context.metadata = {"parameters": {}}
 
-        result = await plugin._ai_get_file_hash(task, context)
+        result = await plugin._ai_file_hash(task, context)
 
         assert result.success
         data = json.loads(result.content)
