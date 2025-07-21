@@ -1,7 +1,7 @@
 # Sys Tools Plugin for AgentUp
 
 <p align="center">
-  <img src="static/sys_tools.png" alt="SYS Tools Plugin" width="400"/>
+  <img src="static/logo.png" alt="SYS Tools Plugin" width="400"/>
 </p>
 
 This plugin provides safe, controlled access to system operations including file I/O, directory management, and system information retrieval.
