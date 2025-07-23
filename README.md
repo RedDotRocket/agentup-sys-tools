@@ -12,21 +12,21 @@ or go ahead and implement it yourself!
 ## Tool Capabilities
 
 ### File Operations
-- **Read File** - Read text file contents with size limits and encoding support
-- **Write File** - Write content to files with atomic operations and parent directory creation
-- **Check File Exists** - Verify if a file or directory exists
-- **Get File Info** - Retrieve detailed metadata about files and directories
-- **Get File Hash** - Compute cryptographic hashes (MD5, SHA1, SHA256, SHA512) with hex/base64 output
+- **Read File** (`file_read`, scope: `files:read`) - Read text file contents with size limits and encoding support
+- **Write File** (`file_write`, scope: `files:write`) - Write content to files with atomic operations and parent directory creation
+- **Check File Exists** (`file_exists`, scope: `files:read`) - Verify if a file or directory exists
+- **Get File Info** (`file_info`, scope: `files:read`) - Retrieve detailed metadata about files and directories
+- **Get File Hash** (`file_hash`, scope: `files:read`) - Compute cryptographic hashes (MD5, SHA1, SHA256, SHA512) with hex/base64 output
 
 ### Directory Operations
-- **List Directory** - List directory contents with pattern matching and recursive options
-- **Create Directory** - Create directories with parent creation support
-- **Delete File/Directory** - Safely delete files and directories with recursive option
+- **List Directory** (`list_directory`, scope: `files:read`) - List directory contents with pattern matching and recursive options
+- **Create Directory** (`create_directory`, scope: `files:write`) - Create directories with parent creation support
+- **Delete File/Directory** (`delete_file`, scope: `files:admin`) - Safely delete files and directories with recursive option
 
 ### System Operations
-- **Get System Info** - Retrieve platform, architecture, and environment information
-- **Get Working Directory** - Get current working directory path
-- **Execute Command** - Execute whitelisted shell commands with timeout support
+- **Get System Info** (`system_info`, scope: `system:read`) - Retrieve platform, architecture, and environment information
+- **Get Working Directory** (`working_directory`, scope: `system:read`) - Get current working directory path
+- **Execute Command** (`execute_command`, scope: `system:admin`) - Execute whitelisted shell commands with timeout support
 
 ### Security and Validation
 - Path validation and basic sandboxing to prevent directory traversal
@@ -55,7 +55,7 @@ agentup plugin install system-tools
 
 ## Configuration
 
-Add the sys_tools skill to your agent's `agent_config.yaml`:
+Add the sys_tools plugin to your agent's `agentup.yml`:
 
 ```yaml
 plugins:
@@ -64,7 +64,40 @@ plugins:
     description: System tools for basic operations
     input_mode: text
     output_mode: text
-    routing_mode: ai
+    capabilities:
+      - capability_id: file_read
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: file_write
+        enabled: true
+        required_scopes: ["files:write"]
+      - capability_id: file_exists
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: file_info
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: list_directory
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: create_directory
+        enabled: true
+        required_scopes: ["files:write"]
+      - capability_id: delete_file
+        enabled: true
+        required_scopes: ["files:admin"]
+      - capability_id: system_info
+        enabled: true
+        required_scopes: ["system:read"]
+      - capability_id: working_directory
+        enabled: true
+        required_scopes: ["system:read"]
+      - capability_id: execute_command
+        enabled: true
+        required_scopes: ["system:admin"]
+      - capability_id: file_hash
+        enabled: true
+        required_scopes: ["files:read"]
     config:
       # Optional: Restrict operations to specific directory (defaults to cwd)
       workspace_dir: "./workspace"
