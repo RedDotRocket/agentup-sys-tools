@@ -9,6 +9,60 @@ This plugin provides safe, controlled access to system operations including file
 If you need any more tool calls or functionality, please create an issue in the repository
 or go ahead and implement it yourself!
 
+## Configuration
+
+Add the sys_tools skill to your agent's `agent_config.yaml`:
+
+```yaml
+plugins:
+  - plugin_id: sys_tools
+    name: System Tools
+    description: System tools for basic operations
+    input_mode: text
+    output_mode: texti
+    capabilities:
+      - capability_id: file_read
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: file_write
+        enabled: true
+        required_scopes: ["files:write"]
+      - capability_id: file_exists
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: file_info
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: list_directory
+        enabled: true
+        required_scopes: ["files:read"]
+      - capability_id: create_directory
+        enabled: true
+        required_scopes: ["files:write"]
+      - capability_id: delete_file
+        enabled: true
+        required_scopes: ["files:admin"]
+      - capability_id: system_info
+        enabled: true
+        required_scopes: ["system:read"]
+      - capability_id: working_directory
+        enabled: true
+        required_scopes: ["system:read"]
+      - capability_id: execute_command
+        enabled: true
+        required_scopes: ["system:admin"]
+      - capability_id: file_hash
+        enabled: true
+        required_scopes: ["files:read"]
+    config:
+      # Optional: Restrict operations to specific directory (defaults to cwd)
+      workspace_dir: "./workspace"
+      # Optional: Maximum file size in bytes (default 10MB)
+      max_file_size: 10485760
+      # Optional: Allow safe command execution (default true)
+      allow_command_execution: true
+```
+
 ## Tool Capabilities
 
 ### File Operations
@@ -53,26 +107,7 @@ pip install agentup-system-tools
 agentup plugin install system-tools
 ```
 
-## Configuration
 
-Add the sys_tools skill to your agent's `agent_config.yaml`:
-
-```yaml
-plugins:
-  - plugin_id: sys_tools
-    name: System Tools
-    description: System tools for basic operations
-    input_mode: text
-    output_mode: text
-    routing_mode: ai
-    config:
-      # Optional: Restrict operations to specific directory (defaults to cwd)
-      workspace_dir: "./workspace"
-      # Optional: Maximum file size in bytes (default 10MB)
-      max_file_size: 10485760
-      # Optional: Allow safe command execution (default true)
-      allow_command_execution: true
-```
 
 ## Usage Examples
 
