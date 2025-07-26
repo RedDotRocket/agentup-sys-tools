@@ -1,6 +1,6 @@
 [project]
 name = "sys-tools"
-version = "0.3.1"
+version = "0.3.3"
 description = "A plugin that provides System Tools for AgentUp"
 authors = [
     { name = "Luke Hinds (Red Dot Rocket)", email = "luke@rdrocket.com" }
