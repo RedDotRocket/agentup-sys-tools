@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-from agent.plugins import CapabilityType, CapabilityInfo, ValidationResult
+from agent.plugins import CapabilityType, CapabilityInfo, PluginValidationResult
 
 from sys_tools.plugin import Plugin
 
@@ -21,7 +21,7 @@ class TestPluginRegistration:
         # Should return a list of capabilities
         assert isinstance(capabilities, list)
         assert len(capabilities) > 0  # Should have at least one capability
-        
+
         # Check first capability (should be the main sys_tools capability)
         main_capability = capabilities[0]
         assert isinstance(main_capability, CapabilityInfo)
@@ -42,7 +42,7 @@ class TestPluginRegistration:
         }
 
         result = plugin.validate_config(config)
-        assert isinstance(result, ValidationResult)
+        assert isinstance(result, PluginValidationResult)
         assert result.valid
         assert len(result.errors) == 0
 
@@ -696,7 +696,7 @@ class TestFileHashing:
         # Test AI function execution
         task = Mock()
         task.metadata = {"path": "ai_test.txt", "algorithms": ["sha256", "md5"]}
-        
+
         context = Mock()
         context.task = task
         context.metadata = {"parameters": {}}

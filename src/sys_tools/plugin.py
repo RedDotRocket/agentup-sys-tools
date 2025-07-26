@@ -12,7 +12,7 @@ from agent.plugins import (
     CapabilityContext,
     CapabilityInfo,
     CapabilityResult,
-    ValidationResult,
+    PluginValidationResult,
 )
 
 from .hashing import FileHasher
@@ -346,7 +346,7 @@ class Plugin:
         return [self._create_capability_info(config) for config in CAPABILITIES_CONFIG]
 
     @hookimpl
-    def validate_config(self, config: dict) -> ValidationResult:
+    def validate_config(self, config: dict) -> PluginValidationResult:
         """Validate capability configuration."""
         errors = []
         warnings = []
@@ -367,7 +367,7 @@ class Plugin:
             elif max_size < 1024:
                 warnings.append("max_file_size is very small (< 1KB)")
 
-        return ValidationResult(
+        return PluginValidationResult(
             valid=len(errors) == 0, errors=errors, warnings=warnings
         )
 
