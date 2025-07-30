@@ -73,7 +73,7 @@ sys_tools = "sys_tools.plugin:Plugin"
 #### 1. Capability Registration
 ```python
 @hookimpl
-def register_capability(self) -> list[CapabilityInfo]:
+def register_capability(self) -> list[PluginDefinition]:
     return [self._create_capability_info(config) for config in CAPABILITIES_CONFIG]
 ```
 

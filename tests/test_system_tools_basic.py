@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest  # noqa: F401
-from agent.plugins import CapabilityType, CapabilityInfo, PluginValidationResult
+from agent.plugins import CapabilityType, PluginDefinition, PluginValidationResult
 
 from sys_tools.plugin import Plugin
 from sys_tools.security import SecurityManager
@@ -24,7 +24,7 @@ class TestBasicFunctionality:
 
         # Check first capability (should be the main sys_tools capability)
         main_capability = capabilities[0]
-        assert isinstance(main_capability, CapabilityInfo)
+        assert isinstance(main_capability, PluginDefinition)
         assert main_capability.id == "sys_tools"
         assert main_capability.name == "System Tools"
         assert CapabilityType.TEXT in main_capability.capabilities

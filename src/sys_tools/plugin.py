@@ -10,7 +10,7 @@ from agent.plugins import (
     AIFunction,
     CapabilityType,
     CapabilityContext,
-    CapabilityInfo,
+    PluginDefinition,
     CapabilityResult,
     PluginValidationResult,
 )
@@ -326,9 +326,9 @@ class Plugin:
             }
         }
 
-    def _create_capability_info(self, config: dict) -> CapabilityInfo:
-        """Create a CapabilityInfo object from configuration."""
-        return CapabilityInfo(
+    def _create_capability_info(self, config: dict) -> PluginDefinition:
+        """Create a PluginDefinition object from configuration."""
+        return PluginDefinition(
             id=config["id"],
             name=config["name"],
             version="0.2.0",
@@ -341,7 +341,7 @@ class Plugin:
         )
 
     @hookimpl
-    def register_capability(self) -> list[CapabilityInfo]:
+    def register_capability(self) -> list[PluginDefinition]:
         """Register the system tools capabilities."""
         return [self._create_capability_info(config) for config in CAPABILITIES_CONFIG]
 

@@ -1,13 +1,13 @@
 [project]
 name = "sys-tools"
-version = "0.3.3"
+version = "0.4.0"
 description = "A plugin that provides System Tools for AgentUp"
 authors = [
     { name = "Luke Hinds (Red Dot Rocket)", email = "luke@rdrocket.com" }
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "agentup>=0.3.0",
+    "agentup>=0.4.0",
     "pluggy>=1.5.0",
 ]
 classifiers = [
